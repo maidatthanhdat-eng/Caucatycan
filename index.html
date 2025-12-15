@@ -68,10 +68,10 @@ document.addEventListener('keyup', e => {
 
 function update() {
   // WASD ĐÚNG HƯỚNG
-  if (keys.w) pos.y -= speed;
-  if (keys.s) pos.y += speed;
-  if (keys.a) pos.x -= speed;
-  if (keys.d) pos.x += speed;
+  if (keys.w) pos.y += speed;
+  if (keys.s) pos.y -= speed;
+  if (keys.a) pos.x += speed;
+  if (keys.d) pos.x -= speed;
 
   // Giới hạn map
   pos.x = Math.max(0, Math.min(pos.x, game.offsetWidth));
