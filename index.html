@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Câu Cá Tỷ Cân</title>
 <style>
-body { margin:0; overflow:hidden; }
-#viewport { width:100vw; height:100vh; overflow:hidden; position:relative; background:#000; }
+body { margin:0; overflow:hidden; background:#000; }
+#viewport { width:100vw; height:100vh; overflow:hidden; position:relative; }
 #game { width:2000px; height:1000px; position:absolute; top:0; left:0; background:url('map1.png') no-repeat; background-size:cover; }
 #player { width:50px; height:50px; position:absolute; background:url('santachuoibi.jpg') center/cover no-repeat; pointer-events:none; }
-.spawnHighlight { position:absolute; width:50px; height:50px; border:3px solid lime; border-radius:50%; pointer-events:none; }
+.spawnHighlight { position:absolute; width:50px; height:50px; border-radius:50%; border:3px solid #0f0; pointer-events:none; box-sizing:border-box; }
 .snow { position:absolute; width:6px; height:6px; background:white; border-radius:50%; opacity:0.9; pointer-events:none; }
 </style>
 </head>
@@ -17,68 +17,65 @@ body { margin:0; overflow:hidden; }
 <div id="viewport">
   <div id="game">
     <div id="player"></div>
-    <div id="spawnHighlight"></div>
   </div>
 </div>
 
 <script>
+/* ===== SETUP ===== */
 const game = document.getElementById("game");
 const viewport = document.getElementById("viewport");
 const player = document.getElementById("player");
-const highlight = document.getElementById("spawnHighlight");
 
-let pos = {x:0,y:0};
-const speed = 5;
-const keys = {w:false,a:false,s:false,d:false};
 const mapWidth = 2000;
 const mapHeight = 1000;
 
-// INPUT
-document.addEventListener("keydown", e=>{const k=e.key.toLowerCase(); if(k in keys) keys[k]=true;});
-document.addEventListener("keyup", e=>{const k=e.key.toLowerCase(); if(k in keys) keys[k]=false;});
+let pos = {x: 1000, y: 500};
+const speed = 5;
+const keys = {w:false,a:false,s:false,d:false};
 
-// COLLISION
+/* ===== INPUT ===== */
+document.addEventListener("keydown", e => { const k = e.key.toLowerCase(); if(k in keys) keys[k]=true; });
+document.addEventListener("keyup", e => { const k = e.key.toLowerCase(); if(k in keys) keys[k]=false; });
+
+/* ===== COLLISION ===== */
 const collisionImg = new Image();
-collisionImg.src = "collision.png"; // 612x193
-
+collisionImg.src = "collision.png";
 const collisionCanvas = document.createElement("canvas");
 const collisionCtx = collisionCanvas.getContext("2d");
 
-function canMoveRect(x,y,w=50,h=50){
-  const points = [{x:x,y:y},{x:x+w-1,y:y},{x:x,y:y+h-1},{x:x+w-1,y:y+h-1}];
-  for(const p of points){
-    if(p.x<0||p.y<0||p.x>=mapWidth||p.y>=mapHeight) return false;
-    const cx = Math.floor(p.x/mapWidth*collisionCanvas.width);
-    const cy = Math.floor(p.y/mapHeight*collisionCanvas.height);
-    const data = collisionCtx.getImageData(cx,cy,1,1).data;
-    if(data[0]<=200) return false;
-  }
-  return true;
-}
-
-function findSpawnFromCenter(){
-  const startX = collisionCanvas.width/2;
-  const startY = collisionCanvas.height/2;
-  for(let r=0;r<200;r++){
-    for(let dx=-r;dx<=r;dx++){
-      for(let dy=-r;dy<=r;dy++){
-        const nx = startX+dx;
-        const ny = startY+dy;
-        if(nx<0||ny<0||nx>=collisionCanvas.width||ny>=collisionCanvas.height) continue;
-        const data = collisionCtx.getImageData(nx,ny,1,1).data;
-        if(data[0]>200){
-          // scale về map
-          const mapX = nx/collisionCanvas.width*mapWidth;
-          const mapY = ny/collisionCanvas.height*mapHeight;
-          if(canMoveRect(mapX,mapY)) return {x:mapX,y:mapY};
-        }
-      }
+/* ==== SCALE COLLISION ==== */
+function canMoveRect(x, y, w, h) {
+    const points = [
+        {x:x, y:y}, {x:x+w-1, y:y}, {x:x, y:y+h-1}, {x:x+w-1, y:y+h-1}
+    ];
+    for(const p of points){
+        if(p.x<0 || p.y<0 || p.x>=mapWidth || p.y>=mapHeight) return false;
+        const cx = Math.floor(p.x/mapWidth * collisionCanvas.width);
+        const cy = Math.floor(p.y/mapHeight * collisionCanvas.height);
+        const data = collisionCtx.getImageData(cx, cy, 1, 1).data;
+        if(data[0] <= 200) return false;
     }
-  }
-  return {x:mapWidth/2,y:mapHeight/2};
+    return true;
 }
 
-// TUYẾT
+function findSpawn(x, y){
+    for(let r=0; r<200; r++){
+        for(let dx=-r; dx<=r; dx++){
+            for(let dy=-r; dy<=r; dy++){
+                const nx = x+dx, ny = y+dy;
+                if(nx>=0 && ny>=0 && nx<mapWidth && ny<mapHeight && canMoveRect(nx, ny, 50, 50)) return {x:nx, y:ny};
+            }
+        }
+    }
+    return {x,y};
+}
+
+/* ===== SPAWN HIGHLIGHT ===== */
+const spawnHighlight = document.createElement("div");
+spawnHighlight.className = "spawnHighlight";
+game.appendChild(spawnHighlight);
+
+/* ===== TUYẾT ===== */
 const snowLayer = document.createElement("div");
 snowLayer.style.position="absolute";
 snowLayer.style.width=mapWidth+"px";
@@ -86,72 +83,78 @@ snowLayer.style.height=mapHeight+"px";
 snowLayer.style.pointerEvents="none";
 game.appendChild(snowLayer);
 
-const snows=[];
+const snows = [];
 function createSnow(){
-  const s=document.createElement("div");
-  s.className="snow";
-  s.style.left=Math.random()*mapWidth+"px";
-  s.style.top="-10px";
-  s.speedY=10+Math.random()*8;
-  s.speedX=3+Math.random()*4;
-  snowLayer.appendChild(s);
-  snows.push(s);
+    const s = document.createElement("div");
+    s.className="snow";
+    s.style.left=Math.random()*mapWidth+"px";
+    s.style.top="-10px";
+    s.speedY=10+Math.random()*8;
+    s.speedX=3+Math.random()*4;
+    snowLayer.appendChild(s);
+    snows.push(s);
 }
 function updateSnow(){
-  if(snows.length<180) createSnow();
-  for(let i=snows.length-1;i>=0;i--){
-    const s=snows[i];
-    s.style.top=(s.offsetTop+s.speedY)+"px";
-    s.style.left=(s.offsetLeft+s.speedX)+"px";
-    if(s.offsetTop>mapHeight||s.offsetLeft>mapWidth){ s.remove(); snows.splice(i,1);}
-  }
+    if(snows.length<180) createSnow();
+    for(let i=snows.length-1;i>=0;i--){
+        const s=snows[i];
+        s.style.top=(s.offsetTop+s.speedY)+"px";
+        s.style.left=(s.offsetLeft+s.speedX)+"px";
+        if(s.offsetTop>mapHeight || s.offsetLeft>mapWidth){ s.remove(); snows.splice(i,1);}
+    }
 }
 
-// GAME LOOP
+/* ===== GAME LOOP ===== */
 function update(){
-  let moveX=0, moveY=0;
-  if(keys.w) moveY-=speed;
-  if(keys.s) moveY+=speed;
-  if(keys.a) moveX-=speed;
-  if(keys.d) moveX+=speed;
+    let moveX=0, moveY=0;
+    if(keys.w) moveY-=speed;
+    if(keys.s) moveY+=speed;
+    if(keys.a) moveX-=speed;
+    if(keys.d) moveX+=speed;
 
-  let newX=pos.x+moveX;
-  let newY=pos.y+moveY;
+    let newX=pos.x+moveX;
+    let newY=pos.y+moveY;
 
-  if(canMoveRect(newX,newY)) { pos.x=newX; pos.y=newY;}
-  else{ if(canMoveRect(newX,pos.y)) pos.x=newX; if(canMoveRect(pos.x,newY)) pos.y=newY; }
+    if(canMoveRect(newX,newY,50,50)){ pos.x=newX; pos.y=newY; }
+    else{
+        if(canMoveRect(newX,pos.y,50,50)) pos.x=newX;
+        if(canMoveRect(pos.x,newY,50,50)) pos.y=newY;
+    }
 
-  pos.x=Math.max(0,Math.min(pos.x,mapWidth-50));
-  pos.y=Math.max(0,Math.min(pos.y,mapHeight-50));
+    pos.x=Math.max(0, Math.min(pos.x, mapWidth-50));
+    pos.y=Math.max(0, Math.min(pos.y, mapHeight-50));
 
-  let camX = pos.x-viewport.offsetWidth/2;
-  let camY = pos.y-viewport.offsetHeight/2;
-  camX = Math.max(0,Math.min(camX,mapWidth-viewport.offsetWidth));
-  camY = Math.max(0,Math.min(camY,mapHeight-viewport.offsetHeight));
+    let camX=pos.x-viewport.offsetWidth/2;
+    let camY=pos.y-viewport.offsetHeight/2;
+    camX=Math.max(0, Math.min(camX, mapWidth-viewport.offsetWidth));
+    camY=Math.max(0, Math.min(camY, mapHeight-viewport.offsetHeight));
 
-  game.style.transform=`translate(${-camX}px,${-camY}px)`;
-  player.style.left=(pos.x-camX)+"px";
-  player.style.top=(pos.y-camY)+"px";
+    game.style.transform=`translate(${-camX}px,${-camY}px)`;
+    player.style.left=(pos.x-camX)+"px";
+    player.style.top=(pos.y-camY)+"px";
 
-  updateSnow();
-  requestAnimationFrame(update);
+    // spawn highlight theo player
+    spawnHighlight.style.left=(pos.x-camX)+"px";
+    spawnHighlight.style.top=(pos.y-camY)+"px";
+
+    updateSnow();
+    requestAnimationFrame(update);
 }
 
-// LOAD COLLISION
+/* ===== LOAD COLLISION ===== */
 collisionImg.onload = ()=>{
-  collisionCanvas.width = collisionImg.width;
-  collisionCanvas.height = collisionImg.height;
-  collisionCtx.drawImage(collisionImg,0,0);
+    collisionCanvas.width=collisionImg.width;
+    collisionCanvas.height=collisionImg.height;
+    collisionCtx.drawImage(collisionImg,0,0);
 
-  const spawn = findSpawnFromCenter();
-  pos.x = spawn.x;
-  pos.y = spawn.y;
+    // Spawn hợp lệ
+    if(!canMoveRect(pos.x,pos.y,50,50)){
+        const spawn=findSpawn(mapWidth/4,mapHeight/4); // 1/4 map
+        pos.x=spawn.x;
+        pos.y=spawn.y;
+    }
 
-  // hiển thị highlight
-  highlight.style.left = pos.x + "px";
-  highlight.style.top = pos.y + "px";
-
-  update();
+    update(); // start game loop
 };
 </script>
 </body>
