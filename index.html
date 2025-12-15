@@ -8,44 +8,93 @@
       margin: 0;
       padding: 0;
       overflow: hidden;
+      font-family: Arial, sans-serif;
       background-color: #87CEFA;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
     }
 
-    canvas {
-      display: block; /* chiếm toàn màn hình */
+    h1 {
+      color: white;
+      font-size: 48px;
+      margin-bottom: 50px;
+      text-shadow: 2px 2px #000;
+    }
+
+    button {
+      font-size: 24px;
+      padding: 15px 30px;
+      margin: 10px;
+      cursor: pointer;
+      border: none;
+      border-radius: 10px;
+      background-color: orange;
+      color: white;
+      box-shadow: 2px 2px #555;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background-color: #ff9900;
+    }
+
+    #gameCanvas {
+      display: none;
+      border: none;
+      background-color: #ADD8E6;
     }
   </style>
 </head>
 <body>
+  <h1>Câu Cá Vạn Cân</h1>
+  <button id="startButton">Câu cá</button>
+  <button id="infoButton">Hướng dẫn</button>
+
   <canvas id="gameCanvas"></canvas>
 
   <script>
+    const startButton = document.getElementById("startButton");
+    const infoButton = document.getElementById("infoButton");
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // Đặt canvas fullscreen
+    // Nhân vật
+    let player = { x: 0, y: 0, width: 40, height: 40, speed: 5 };
+
+    // XP / Level / Stamina
+    let playerXP = 50;
+    let playerLevel = 3;
+    let playerStamina = 70;
+
+    let keys = {};
+
+    // Resize canvas fullscreen
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      if(player.x === 0 && player.y === 0) {
+        player.x = canvas.width / 2;
+        player.y = canvas.height / 2;
+      }
     }
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
 
-    // Nhân vật
-    let player = { 
-      x: canvas.width/2, 
-      y: canvas.height/2, 
-      width: 40, 
-      height: 50, 
-      speed: 5 
-    };
+    // Menu nút
+    startButton.addEventListener("click", () => {
+      document.querySelector("h1").style.display = "none";
+      startButton.style.display = "none";
+      infoButton.style.display = "none";
+      canvas.style.display = "block";
+      gameLoop();
+    });
 
-    // XP / Level / Stamina
-    let playerXP = 0;        // max 100
-    let playerLevel = 1;
-    let playerStamina = 100;   // max 100
-
-    let keys = {};
+    infoButton.addEventListener("click", () => {
+      alert("Dùng phím mũi tên hoặc W A S D để di chuyển.\nStamina giảm khi dùng chiêu hoặc câu cá.");
+    });
 
     // Lắng nghe phím
     window.addEventListener("keydown", (e) => { keys[e.key] = true; });
@@ -69,16 +118,15 @@
       if(player.y + player.height > canvas.height) player.y = canvas.height - player.height;
     }
 
-    // Vẽ HUD (XP + Level + Stamina) ở góc trên bên trái
     function drawHUD() {
       // Thanh XP
       ctx.fillStyle = "blue";
-      ctx.fillRect(20, 20, 2 * playerXP, 30); // max 100 -> 200px
+      ctx.fillRect(20, 20, 2 * playerXP, 30);
       ctx.strokeStyle = "white";
       ctx.strokeRect(20, 20, 200, 30);
       ctx.fillStyle = "white";
       ctx.font = "16px Arial";
-      ctx.fillText("Lv " + playerLevel, 230, 42);
+      ctx.fillText("LV " + playerLevel, 230, 42);
 
       // Thanh Stamina
       ctx.fillStyle = "red";
@@ -97,8 +145,6 @@
       drawHUD();
       requestAnimationFrame(gameLoop);
     }
-
-    gameLoop();
   </script>
 </body>
 </html>
