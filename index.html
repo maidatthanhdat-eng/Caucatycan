@@ -22,7 +22,6 @@
     left: 100px;
     top: 100px;
     background: url('santachuoibi.jpg') center/cover no-repeat;
-    transition: transform 0.1s linear; /* mượt */
   }
 </style>
 </head>
@@ -41,42 +40,39 @@ let keys = { w: false, a: false, s: false, d: false };
 
 // Lắng nghe phím
 document.addEventListener('keydown', e => {
-  if(e.key.toLowerCase() === 'w') keys.w = true;
-  if(e.key.toLowerCase() === 'a') keys.a = true;
-  if(e.key.toLowerCase() === 's') keys.s = true;
-  if(e.key.toLowerCase() === 'd') keys.d = true;
+  const key = e.key.toLowerCase();
+  if(['w','a','s','d'].includes(key)) keys[key] = true;
 });
 document.addEventListener('keyup', e => {
-  if(e.key.toLowerCase() === 'w') keys.w = false;
-  if(e.key.toLowerCase() === 'a') keys.a = false;
-  if(e.key.toLowerCase() === 's') keys.s = false;
-  if(e.key.toLowerCase() === 'd') keys.d = false;
+  const key = e.key.toLowerCase();
+  if(['w','a','s','d'].includes(key)) keys[key] = false;
 });
 
-// Hàm cập nhật vị trí
+// Hàm cập nhật
 function update() {
+  // Di chuyển nhân vật
   if(keys.w) pos.y -= speed;
   if(keys.s) pos.y += speed;
   if(keys.a) pos.x -= speed;
   if(keys.d) pos.x += speed;
 
-  // Giới hạn trong game world
+  // Giới hạn
   pos.x = Math.max(0, Math.min(pos.x, game.offsetWidth - player.offsetWidth));
   pos.y = Math.max(0, Math.min(pos.y, game.offsetHeight - player.offsetHeight));
 
-  // Cập nhật vị trí nhân vật
-  player.style.left = pos.x + 'px';
-  player.style.top = pos.y + 'px';
+  // Cập nhật vị trí
+  player.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
 
   // Camera theo nhân vật
-  const camX = pos.x - window.innerWidth / 2 + player.offsetWidth / 2;
-  const camY = pos.y - window.innerHeight / 2 + player.offsetHeight / 2;
-  window.scrollTo(camX, camY);
+  window.scrollTo(
+    pos.x - window.innerWidth/2 + player.offsetWidth/2,
+    pos.y - window.innerHeight/2 + player.offsetHeight/2
+  );
 
   requestAnimationFrame(update);
 }
 
-// Bắt đầu vòng lặp
+// Bắt đầu
 update();
 </script>
 </body>
