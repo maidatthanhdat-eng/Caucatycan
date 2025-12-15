@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Câu Cá Tỷ Cân - Menu</title>
+  <title>Câu Cá Vạn Cân - Menu</title>
   <style>
     body {
       margin: 0;
@@ -49,7 +49,7 @@
   </style>
 </head>
 <body>
-  <h1>Câu Cá Tỷ Cân</h1>
+  <h1>Câu Cá Vạn Cân</h1>
   <button id="startButton">Bắt đầu chơi</button>
   <button id="infoButton">Hướng dẫn</button>
 
@@ -61,13 +61,13 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    let player = {
-      x: 400,
-      y: 300,
-      width: 40,
-      height: 40,
-      speed: 5
-    };
+    // Nhân vật
+    let player = { x: 400, y: 300, width: 40, height: 40, speed: 5 };
+
+    // XP / Level / Stamina
+    let playerXP = 50;        // max 100
+    let playerLevel = 3;
+    let playerStamina = 70;   // max 100
 
     let keys = {};
 
@@ -80,9 +80,8 @@
       gameLoop();
     });
 
-    // Hướng dẫn
     infoButton.addEventListener("click", () => {
-      alert("Dùng phím mũi tên hoặc W A S D để di chuyển nhân vật.\nSau này sẽ thả mồi câu cá.");
+      alert("Dùng phím mũi tên hoặc W A S D để di chuyển nhân vật.\nXP tăng khi câu cá, stamina giảm khi chạy.");
     });
 
     // Lắng nghe phím
@@ -95,21 +94,59 @@
     }
 
     function updatePlayer() {
-      if(keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
-      if(keys["ArrowDown"] || keys["s"]) player.y += player.speed;
-      if(keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
-      if(keys["ArrowRight"] || keys["d"]) player.x += player.speed;
+      let moving = false;
+      if(keys["ArrowUp"] || keys["w"]) { player.y -= player.speed; moving = true; }
+      if(keys["ArrowDown"] || keys["s"]) { player.y += player.speed; moving = true; }
+      if(keys["ArrowLeft"] || keys["a"]) { player.x -= player.speed; moving = true; }
+      if(keys["ArrowRight"] || keys["d"]) { player.x += player.speed; moving = true; }
 
+      // Giữ nhân vật trong canvas
       if(player.x < 0) player.x = 0;
       if(player.y < 0) player.y = 0;
       if(player.x + player.width > canvas.width) player.x = canvas.width - player.width;
       if(player.y + player.height > canvas.height) player.y = canvas.height - player.height;
+
+      // Giảm stamina khi di chuyển
+      if(moving) {
+        playerStamina -= 0.1;
+        if(playerStamina < 0) playerStamina = 0;
+      } else {
+        // hồi stamina khi đứng yên
+        playerStamina += 0.05;
+        if(playerStamina > 100) playerStamina = 100;
+      }
+    }
+
+    // Vẽ HUD (XP + Level + Stamina)
+    function drawHUD() {
+      // Khung XP
+      ctx.fillStyle = "black";
+      ctx.fillRect(20, 20, 200, 30);
+      ctx.fillStyle = "green";
+      ctx.fillRect(20, 20, 2 * playerXP, 30); // 2*XP vì max 100
+      ctx.strokeStyle = "white";
+      ctx.strokeRect(20, 20, 200, 30);
+      ctx.fillStyle = "white";
+      ctx.font = "16px Arial";
+      ctx.fillText("LV " + playerLevel, 230, 42);
+
+      // Khung Stamina
+      ctx.fillStyle = "black";
+      ctx.fillRect(20, 60, 200, 20);
+      ctx.fillStyle = "yellow";
+      ctx.fillRect(20, 60, 2 * playerStamina, 20); // 2*Stamina max 100
+      ctx.strokeStyle = "white";
+      ctx.strokeRect(20, 60, 200, 20);
+      ctx.fillStyle = "white";
+      ctx.font = "14px Arial";
+      ctx.fillText("Stamina", 230, 75);
     }
 
     function gameLoop() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       updatePlayer();
       drawPlayer();
+      drawHUD();
       requestAnimationFrame(gameLoop);
     }
   </script>
