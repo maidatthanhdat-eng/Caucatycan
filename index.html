@@ -6,11 +6,29 @@
 <title>Câu Cá Tỷ Cân</title>
 <style>
 body { margin:0; overflow:hidden; background:#000; }
-#viewport { width:100vw; height:100vh; overflow:hidden; position:relative; }
-#game { width:2000px; height:1000px; position:absolute; top:0; left:0; background:url('map1.png') no-repeat; background-size:cover; }
-#player { width:50px; height:50px; position:absolute; background:url('santachuoibi.jpg') center/cover no-repeat; pointer-events:none; }
-.spawnHighlight { position:absolute; width:50px; height:50px; border-radius:50%; border:3px solid #0f0; pointer-events:none; box-sizing:border-box; }
-.snow { position:absolute; width:6px; height:6px; background:white; border-radius:50%; opacity:0.9; pointer-events:none; }
+#viewport {
+  width: 100vw; height: 100vh;
+  overflow: hidden; position: relative;
+}
+#game {
+  position: absolute; top:0; left:0;
+  width:612px; height:193px;
+  background:url('map1.png') no-repeat;
+  background-size:cover;
+}
+#player {
+  width:40px; height:50px;
+  position:absolute;
+  background:url('santachuoibi.jpg') center/cover no-repeat;
+}
+.spawnHighlight {
+  position:absolute; border:2px solid rgba(0,255,0,0.7);
+  border-radius:50%; pointer-events:none;
+}
+.snow {
+  position:absolute; width:4px; height:4px; background:white;
+  border-radius:50%; opacity:0.8; pointer-events:none;
+}
 </style>
 </head>
 <body>
@@ -21,21 +39,28 @@ body { margin:0; overflow:hidden; background:#000; }
 </div>
 
 <script>
-/* ===== SETUP ===== */
 const game = document.getElementById("game");
-const viewport = document.getElementById("viewport");
 const player = document.getElementById("player");
+const viewport = document.getElementById("viewport");
 
-const mapWidth = 2000;
-const mapHeight = 1000;
+const mapWidth = 612;
+const mapHeight = 193;
+const playerWidth = 40;
+const playerHeight = 50;
 
-let pos = {x: 1000, y: 500};
-const speed = 5;
-const keys = {w:false,a:false,s:false,d:false};
+let pos = { x: 0, y: 0 };
+const speed = 3;
+const keys = { w:false,a:false,s:false,d:false };
 
 /* ===== INPUT ===== */
-document.addEventListener("keydown", e => { const k = e.key.toLowerCase(); if(k in keys) keys[k]=true; });
-document.addEventListener("keyup", e => { const k = e.key.toLowerCase(); if(k in keys) keys[k]=false; });
+document.addEventListener("keydown", e => {
+  const k = e.key.toLowerCase();
+  if(k in keys) keys[k]=true;
+});
+document.addEventListener("keyup", e => {
+  const k = e.key.toLowerCase();
+  if(k in keys) keys[k]=false;
+});
 
 /* ===== COLLISION ===== */
 const collisionImg = new Image();
@@ -43,37 +68,31 @@ collisionImg.src = "collision.png";
 const collisionCanvas = document.createElement("canvas");
 const collisionCtx = collisionCanvas.getContext("2d");
 
-/* ==== SCALE COLLISION ==== */
-function canMoveRect(x, y, w, h) {
-    const points = [
-        {x:x, y:y}, {x:x+w-1, y:y}, {x:x, y:y+h-1}, {x:x+w-1, y:y+h-1}
-    ];
-    for(const p of points){
-        if(p.x<0 || p.y<0 || p.x>=mapWidth || p.y>=mapHeight) return false;
-        const cx = Math.floor(p.x/mapWidth * collisionCanvas.width);
-        const cy = Math.floor(p.y/mapHeight * collisionCanvas.height);
-        const data = collisionCtx.getImageData(cx, cy, 1, 1).data;
-        if(data[0] <= 200) return false;
-    }
-    return true;
+/* Check 4 góc nhân vật */
+function canMoveRect(x,y,w,h){
+  const points=[
+    {x:x,y:y},
+    {x:x+w-1,y:y},
+    {x:x,y:y+h-1},
+    {x:x+w-1,y:y+h-1}
+  ];
+  for(const p of points){
+    if(p.x<0||p.y<0||p.x>=mapWidth||p.y>=mapHeight) return false;
+    const data = collisionCtx.getImageData(Math.floor(p.x),Math.floor(p.y),1,1).data;
+    if(data[0]<=200) return false;
+  }
+  return true;
 }
 
-function findSpawn(x, y){
-    for(let r=0; r<200; r++){
-        for(let dx=-r; dx<=r; dx++){
-            for(let dy=-r; dy<=r; dy++){
-                const nx = x+dx, ny = y+dy;
-                if(nx>=0 && ny>=0 && nx<mapWidth && ny<mapHeight && canMoveRect(nx, ny, 50, 50)) return {x:nx, y:ny};
-            }
-        }
+/* Spawn hợp lệ */
+function findSpawn() {
+  for(let y=0;y<mapHeight;y++){
+    for(let x=0;x<mapWidth;x++){
+      if(canMoveRect(x,y,playerWidth,playerHeight)) return {x:x, y:y};
     }
-    return {x,y};
+  }
+  return {x:0, y:0};
 }
-
-/* ===== SPAWN HIGHLIGHT ===== */
-const spawnHighlight = document.createElement("div");
-spawnHighlight.className = "spawnHighlight";
-game.appendChild(spawnHighlight);
 
 /* ===== TUYẾT ===== */
 const snowLayer = document.createElement("div");
@@ -85,77 +104,69 @@ game.appendChild(snowLayer);
 
 const snows = [];
 function createSnow(){
-    const s = document.createElement("div");
-    s.className="snow";
-    s.style.left=Math.random()*mapWidth+"px";
-    s.style.top="-10px";
-    s.speedY=10+Math.random()*8;
-    s.speedX=3+Math.random()*4;
-    snowLayer.appendChild(s);
-    snows.push(s);
+  const s = document.createElement("div");
+  s.className="snow";
+  s.style.left=Math.random()*mapWidth+"px";
+  s.style.top="-10px";
+  s.speedY=1+Math.random()*2;
+  s.speedX=(Math.random()-0.5)*1;
+  snowLayer.appendChild(s);
+  snows.push(s);
 }
 function updateSnow(){
-    if(snows.length<180) createSnow();
-    for(let i=snows.length-1;i>=0;i--){
-        const s=snows[i];
-        s.style.top=(s.offsetTop+s.speedY)+"px";
-        s.style.left=(s.offsetLeft+s.speedX)+"px";
-        if(s.offsetTop>mapHeight || s.offsetLeft>mapWidth){ s.remove(); snows.splice(i,1);}
+  if(snows.length<50) createSnow();
+  for(let i=snows.length-1;i>=0;i--){
+    const s=snows[i];
+    s.style.top = (s.offsetTop+s.speedY)+"px";
+    s.style.left = (s.offsetLeft+s.speedX)+"px";
+    if(s.offsetTop>mapHeight || s.offsetLeft<0 || s.offsetLeft>mapWidth){
+      s.remove(); snows.splice(i,1);
     }
+  }
 }
 
 /* ===== GAME LOOP ===== */
 function update(){
-    let moveX=0, moveY=0;
-    if(keys.w) moveY-=speed;
-    if(keys.s) moveY+=speed;
-    if(keys.a) moveX-=speed;
-    if(keys.d) moveX+=speed;
+  let moveX=0, moveY=0;
+  if(keys.w) moveY-=speed;
+  if(keys.s) moveY+=speed;
+  if(keys.a) moveX-=speed;
+  if(keys.d) moveX+=speed;
 
-    let newX=pos.x+moveX;
-    let newY=pos.y+moveY;
+  let newX=pos.x+moveX;
+  let newY=pos.y+moveY;
 
-    if(canMoveRect(newX,newY,50,50)){ pos.x=newX; pos.y=newY; }
-    else{
-        if(canMoveRect(newX,pos.y,50,50)) pos.x=newX;
-        if(canMoveRect(pos.x,newY,50,50)) pos.y=newY;
-    }
+  if(canMoveRect(newX,newY,playerWidth,playerHeight)){
+    pos.x=newX; pos.y=newY;
+  } else {
+    if(canMoveRect(newX,pos.y,playerWidth,playerHeight)) pos.x=newX;
+    if(canMoveRect(pos.x,newY,playerWidth,playerHeight)) pos.y=newY;
+  }
 
-    pos.x=Math.max(0, Math.min(pos.x, mapWidth-50));
-    pos.y=Math.max(0, Math.min(pos.y, mapHeight-50));
+  // Camera follow player
+  const camX = Math.max(0, Math.min(pos.x - viewport.offsetWidth/2, mapWidth - viewport.offsetWidth));
+  const camY = Math.max(0, Math.min(pos.y - viewport.offsetHeight/2, mapHeight - viewport.offsetHeight));
 
-    let camX=pos.x-viewport.offsetWidth/2;
-    let camY=pos.y-viewport.offsetHeight/2;
-    camX=Math.max(0, Math.min(camX, mapWidth-viewport.offsetWidth));
-    camY=Math.max(0, Math.min(camY, mapHeight-viewport.offsetHeight));
+  game.style.transform = `translate(${-camX}px,${-camY}px)`;
+  player.style.left = (pos.x)+"px";
+  player.style.top = (pos.y)+"px";
 
-    game.style.transform=`translate(${-camX}px,${-camY}px)`;
-    player.style.left=(pos.x-camX)+"px";
-    player.style.top=(pos.y-camY)+"px";
-
-    // spawn highlight theo player
-    spawnHighlight.style.left=(pos.x-camX)+"px";
-    spawnHighlight.style.top=(pos.y-camY)+"px";
-
-    updateSnow();
-    requestAnimationFrame(update);
+  updateSnow();
+  requestAnimationFrame(update);
 }
 
 /* ===== LOAD COLLISION ===== */
-collisionImg.onload = ()=>{
-    collisionCanvas.width=collisionImg.width;
-    collisionCanvas.height=collisionImg.height;
-    collisionCtx.drawImage(collisionImg,0,0);
+collisionImg.onload=()=>{
+  collisionCanvas.width=mapWidth;
+  collisionCanvas.height=mapHeight;
+  collisionCtx.drawImage(collisionImg,0,0,mapWidth,mapHeight);
 
-    // Spawn hợp lệ
-    if(!canMoveRect(pos.x,pos.y,50,50)){
-        const spawn=findSpawn(mapWidth/4,mapHeight/4); // 1/4 map
-        pos.x=spawn.x;
-        pos.y=spawn.y;
-    }
+  // spawn nhân vật
+  pos = findSpawn();
 
-    update(); // start game loop
+  update();
 };
 </script>
 </body>
 </html>
+
