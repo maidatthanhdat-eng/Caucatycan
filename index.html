@@ -4,12 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Câu Cá Tỷ Cân</title>
-
 <style>
   body {
     margin: 0;
     overflow: hidden;
-    background: #000;
   }
 
   #viewport {
@@ -17,15 +15,16 @@
     height: 100vh;
     overflow: hidden;
     position: relative;
+    background: #000;
   }
 
   #game {
     width: 2000px;
     height: 1000px;
     position: absolute;
-    left: 0;
     top: 0;
-    background: url("background.jpg") repeat;
+    left: 0;
+    background: url('background.jpg') repeat;
   }
 
   #player {
@@ -35,13 +34,13 @@
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    background: url("santachuoibi.jpg") center/cover no-repeat;
-    z-index: 10;
+    background: url('santachuoibi.jpg') center/cover no-repeat;
+    pointer-events: none;
   }
 </style>
 </head>
-
 <body>
+
 <div id="viewport">
   <div id="game">
     <div id="player"></div>
@@ -49,52 +48,48 @@
 </div>
 
 <script>
-const game = document.getElementById("game");
-const viewport = document.getElementById("viewport");
+const game = document.getElementById('game');
+const viewport = document.getElementById('viewport');
 
-const speed = 6;
+let pos = { x: 1000, y: 500 }; // vị trí nhân vật trong world
+const speed = 5;
 
-// vị trí camera (map)
-let cam = {
-  x: 0,
-  y: 0
-};
+const keys = { w:false, a:false, s:false, d:false };
 
-let keys = {
-  w: false,
-  a: false,
-  s: false,
-  d: false
-};
-
-document.addEventListener("keydown", e => {
+document.addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   if (k in keys) keys[k] = true;
 });
 
-document.addEventListener("keyup", e => {
+document.addEventListener('keyup', e => {
   const k = e.key.toLowerCase();
   if (k in keys) keys[k] = false;
 });
 
 function update() {
-  // WASD (KHÔNG NGƯỢC)
-  if (keys.w) cam.y += speed; // đi lên
-  if (keys.s) cam.y -= speed; // đi xuống
-  if (keys.a) cam.x += speed; // sang trái
-  if (keys.d) cam.x -= speed; // sang phải
+  // WASD ĐÚNG HƯỚNG
+  if (keys.w) pos.y -= speed;
+  if (keys.s) pos.y += speed;
+  if (keys.a) pos.x -= speed;
+  if (keys.d) pos.x += speed;
 
   // Giới hạn map
-  cam.x = Math.min(0, Math.max(cam.x, viewport.clientWidth - game.offsetWidth));
-  cam.y = Math.min(0, Math.max(cam.y, viewport.clientHeight - game.offsetHeight));
+  pos.x = Math.max(0, Math.min(pos.x, game.offsetWidth));
+  pos.y = Math.max(0, Math.min(pos.y, game.offsetHeight));
 
-  game.style.transform = `translate(${cam.x}px, ${cam.y}px)`;
+  // CAMERA ĐÚNG (KHÔNG NGƯỢC)
+  const camX = -(pos.x - viewport.offsetWidth / 2);
+  const camY = -(pos.y - viewport.offsetHeight / 2);
+
+  game.style.transform = `translate(${camX}px, ${camY}px)`;
 
   requestAnimationFrame(update);
 }
 
 update();
 </script>
+
 </body>
 </html>
+
 
