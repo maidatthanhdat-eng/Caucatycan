@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Câu Cá Vạn Cân - Menu</title>
+  <title>Câu Cá Vạn Cân</title>
   <style>
     body {
       margin: 0;
@@ -81,7 +81,7 @@
     });
 
     infoButton.addEventListener("click", () => {
-      alert("Dùng phím mũi tên hoặc W A S D để di chuyển nhân vật.\nXP tăng khi câu cá, stamina giảm khi chạy.");
+      alert("Dùng phím mũi tên hoặc W A S D để di chuyển nhân vật.\nStamina sẽ chỉ giảm khi dùng chiêu hoặc câu cá.");
     });
 
     // Lắng nghe phím
@@ -94,27 +94,11 @@
     }
 
     function updatePlayer() {
-      let moving = false;
-      if(keys["ArrowUp"] || keys["w"]) { player.y -= player.speed; moving = true; }
-      if(keys["ArrowDown"] || keys["s"]) { player.y += player.speed; moving = true; }
-      if(keys["ArrowLeft"] || keys["a"]) { player.x -= player.speed; moving = true; }
-      if(keys["ArrowRight"] || keys["d"]) { player.x += player.speed; moving = true; }
-
-      // Giữ nhân vật trong canvas
-      if(player.x < 0) player.x = 0;
-      if(player.y < 0) player.y = 0;
-      if(player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-      if(player.y + player.height > canvas.height) player.y = canvas.height - player.height;
-
-      // Giảm stamina khi di chuyển
-      if(moving) {
-        playerStamina -= 0.1;
-        if(playerStamina < 0) playerStamina = 0;
-      } else {
-        // hồi stamina khi đứng yên
-        playerStamina += 0.05;
-        if(playerStamina > 100) playerStamina = 100;
-      }
+      if(keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
+      if(keys["ArrowDown"] || keys["s"]) player.y += player.speed;
+      if(keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
+      if(keys["ArrowRight"] || keys["d"]) player.x += player.speed;
+      // Nhân vật có thể đi tự do, không giới hạn trong canvas
     }
 
     // Vẽ HUD (XP + Level + Stamina)
