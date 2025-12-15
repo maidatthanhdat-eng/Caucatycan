@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Câu Cá Tỷ Cân</title>
+  <style>
+    body {
+      text-align: center;
+      background-color: #87CEFA;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      border: 2px solid #000;
+      background-color: #ADD8E6;
+    }
+  </style>
+</head>
+<body>
+  <h1>Câu Cá Tỷ Cân</h1>
+  <p>Dùng phím mũi tên hoặc W A S D để di chuyển</p>
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Nhân vật
+    let player = {
+      x: 400,
+      y: 300,
+      width: 40,
+      height: 40,
+      speed: 5
+    };
+
+    // Nhấn phím
+    let keys = {};
+
+    window.addEventListener("keydown", (e) => {
+      keys[e.key] = true;
+    });
+
+    window.addEventListener("keyup", (e) => {
+      keys[e.key] = false;
+    });
+
+    // Vẽ nhân vật
+    function drawPlayer() {
+      ctx.fillStyle = "red";
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+    }
+
+    // Cập nhật vị trí nhân vật
+    function updatePlayer() {
+      if(keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
+      if(keys["ArrowDown"] || keys["s"]) player.y += player.speed;
+      if(keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
+      if(keys["ArrowRight"] || keys["d"]) player.x += player.speed;
+
+      // Giữ nhân vật trong canvas
+      if(player.x < 0) player.x = 0;
+      if(player.y < 0) player.y = 0;
+      if(player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+      if(player.y + player.height > canvas.height) player.y = canvas.height - player.height;
+    }
+
+    // Vòng lặp game
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      updatePlayer();
+      drawPlayer();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+  </script>
+</body>
+</html>
