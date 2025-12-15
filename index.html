@@ -103,15 +103,23 @@
     });
 
     fishButton.addEventListener("click", () => {
-      if(playerStamina >= 10) {
-        playerStamina -= 10;
-        playerXP += 5;
-        if(playerXP > 100) playerXP = 100;
-        alert("Bạn vừa câu cá! +5 XP, -10 Stamina");
-      } else {
-        alert("Không đủ thể lực để câu cá!");
-      }
-    });
+    playerXP += 5;
+    if(playerXP > 100) playerXP = 100;
+    alert("Bạn vừa câu cá! +5 XP");
+
+    // Tạm thời bỏ các phím di chuyển để nhân vật không tự đi
+    keys["w"] = false;
+    keys["a"] = false;
+    keys["s"] = false;
+    keys["d"] = false;
+    keys["ArrowUp"] = false;
+    keys["ArrowLeft"] = false;
+    keys["ArrowDown"] = false;
+    keys["ArrowRight"] = false;
+  } else {
+    alert("Không đủ thể lực để câu cá!");
+  }
+});
 
     window.addEventListener("keydown", (e) => { keys[e.key] = true; });
     window.addEventListener("keyup", (e) => { keys[e.key] = false; });
