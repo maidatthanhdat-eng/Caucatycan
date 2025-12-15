@@ -25,13 +25,14 @@
     background: url('background.jpg') repeat;
   }
   #player {
-    width: 50px;
-    height: 50px;
-    position: absolute;
-    left: 100px;
-    top: 100px;
-    background: url('santachuoibi.jpg') center/cover no-repeat;
-  }
+  width: 50px;
+  height: 50px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: url('santachuoibi.jpg') center/cover no-repeat;
+}
 </style>
 </head>
 <body>
@@ -42,7 +43,6 @@
 </div>
 
 <script>
-const player = document.getElementById('player');
 const game = document.getElementById('game');
 const viewport = document.getElementById('viewport');
 
@@ -50,33 +50,29 @@ let pos = { x: 100, y: 100 };
 const speed = 5;
 let keys = { w:false, a:false, s:false, d:false };
 
-// Nhận phím
 document.addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
-  if(['w','a','s','d'].includes(k)) keys[k] = true;
+  if (keys[k] !== undefined) keys[k] = true;
 });
+
 document.addEventListener('keyup', e => {
   const k = e.key.toLowerCase();
-  if(['w','a','s','d'].includes(k)) keys[k] = false;
+  if (keys[k] !== undefined) keys[k] = false;
 });
 
-// Vòng lặp game
 function update() {
-  if(keys.w) pos.y -= speed;
-  if(keys.s) pos.y += speed;
-  if(keys.a) pos.x -= speed;
-  if(keys.d) pos.x += speed;
+  if (keys.w) pos.y -= speed;
+  if (keys.s) pos.y += speed;
+  if (keys.a) pos.x -= speed;
+  if (keys.d) pos.x += speed;
 
-  // Giới hạn trong game world
-  pos.x = Math.max(0, Math.min(pos.x, game.offsetWidth - player.offsetWidth));
-  pos.y = Math.max(0, Math.min(pos.y, game.offsetHeight - player.offsetHeight));
+  // Giới hạn map
+  pos.x = Math.max(0, Math.min(pos.x, game.offsetWidth));
+  pos.y = Math.max(0, Math.min(pos.y, game.offsetHeight));
 
-  // Cập nhật nhân vật
-  player.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
-
-  // Camera: di chuyển game world để giữ nhân vật ở giữa
-  const camX = -(pos.x - viewport.offsetWidth / 2 + player.offsetWidth / 2);
-  const camY = -(pos.y - viewport.offsetHeight / 2 + player.offsetHeight / 2);
+  // Camera follow
+  const camX = -(pos.x - viewport.offsetWidth / 2);
+  const camY = -(pos.y - viewport.offsetHeight / 2);
 
   game.style.transform = `translate(${camX}px, ${camY}px)`;
 
