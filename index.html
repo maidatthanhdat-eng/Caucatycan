@@ -69,9 +69,6 @@ fishButton.addEventListener("click", () => {
   }
 });
 
-window.addEventListener("keydown", e=>{ keys[e.key]=true; });
-window.addEventListener("keyup", e=>{ keys[e.key]=false; });
-
 function drawPlayer(){
   ctx.fillStyle="red";
   ctx.fillRect(player.x, player.y, player.width, player.height);
@@ -81,17 +78,61 @@ function drawPlayer(){
   }
 }
 
+let lastDirection = "right"; // mặc định phải
+
+window.addEventListener("keydown", e => {
+  keys[e.key] = true;
+
+  // chỉ cập nhật hướng trái/phải
+  if(e.key === "a" || e.key === "ArrowLeft") lastDirection = "left";
+  if(e.key === "d" || e.key === "ArrowRight") lastDirection = "right";
+});
+
+window.addEventListener("keyup", e => { keys[e.key] = false; });
+
 function updatePlayer(){
-  if(keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
-  if(keys["ArrowDown"] || keys["s"]) player.y += player.speed;
+  // chỉ di chuyển ngang
   if(keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
   if(keys["ArrowRight"] || keys["d"]) player.x += player.speed;
 
-  if(player.x<0) player.x=0;
-  if(player.y<0) player.y=0;
-  if(player.x+player.width>canvas.width) player.x=canvas.width-player.width;
-  if(player.y+player.height>canvas.height) player.y=canvas.height-player.height;
+  // Giữ trong màn hình
+  if(player.x < 0) player.x = 0;
+  if(player.x + player.width > canvas.width) player.x = canvas.width - player.width;
 }
+
+function drawFishingLine(){
+  if(fishing){
+    if(lineLength < canvas.height - player.y - player.height){
+      lineLength +=5; // tốc độ dây câu thả xuống
+    }
+
+    let startX = player.x + player.width/2;
+    let startY = player.y + player.height/2;
+    let endX = startX + (lastDirection === "left" ? -50 : 50); // thả bên trái/phải
+    let endY = startY + lineLength;
+
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+  }
+}
+
+// Thay đổi fishButton để không reset keys, vẫn cho di chuyển
+fishButton.addEventListener("click", () => {
+  if(playerStamina >=10 && player.hasRod){
+    playerStamina -=10;
+    playerXP +=5;
+    if(playerXP>100) playerXP=100;
+    fishing = true;
+    lineLength = 0;
+    // không reset keys để vẫn di chuyển bình thường
+  } else {
+    alert("Không đủ thể lực hoặc không có cần câu!");
+  }
+});
 
 function drawHUD(){
   ctx.fillStyle="green";
