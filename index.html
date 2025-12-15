@@ -10,7 +10,7 @@
     overflow: hidden;
   }
   #game {
-    width: 2000px;  /* kích thước thế giới */
+    width: 2000px;
     height: 1000px;
     position: relative;
     background: url('background.jpg') repeat;
@@ -22,6 +22,7 @@
     left: 100px;
     top: 100px;
     background: url('santachuoibi.jpg') center/cover no-repeat;
+    transition: transform 0.1s linear; /* mượt */
   }
 </style>
 </head>
@@ -33,29 +34,50 @@
 <script>
 const player = document.getElementById('player');
 const game = document.getElementById('game');
-let x = 100;
-let y = 100;
-const speed = 5;
 
-document.addEventListener('keydown', (e) => {
-  if(e.key === 'ArrowUp') y -= speed;
-  if(e.key === 'ArrowDown') y += speed;
-  if(e.key === 'ArrowLeft') x -= speed;
-  if(e.key === 'ArrowRight') x += speed;
+let pos = { x: 100, y: 100 };
+const speed = 5;
+let keys = { w: false, a: false, s: false, d: false };
+
+// Lắng nghe phím
+document.addEventListener('keydown', e => {
+  if(e.key.toLowerCase() === 'w') keys.w = true;
+  if(e.key.toLowerCase() === 'a') keys.a = true;
+  if(e.key.toLowerCase() === 's') keys.s = true;
+  if(e.key.toLowerCase() === 'd') keys.d = true;
+});
+document.addEventListener('keyup', e => {
+  if(e.key.toLowerCase() === 'w') keys.w = false;
+  if(e.key.toLowerCase() === 'a') keys.a = false;
+  if(e.key.toLowerCase() === 's') keys.s = false;
+  if(e.key.toLowerCase() === 'd') keys.d = false;
+});
+
+// Hàm cập nhật vị trí
+function update() {
+  if(keys.w) pos.y -= speed;
+  if(keys.s) pos.y += speed;
+  if(keys.a) pos.x -= speed;
+  if(keys.d) pos.x += speed;
 
   // Giới hạn trong game world
-  x = Math.max(0, Math.min(x, game.offsetWidth - player.offsetWidth));
-  y = Math.max(0, Math.min(y, game.offsetHeight - player.offsetHeight));
+  pos.x = Math.max(0, Math.min(pos.x, game.offsetWidth - player.offsetWidth));
+  pos.y = Math.max(0, Math.min(pos.y, game.offsetHeight - player.offsetHeight));
 
-  player.style.left = x + 'px';
-  player.style.top = y + 'px';
+  // Cập nhật vị trí nhân vật
+  player.style.left = pos.x + 'px';
+  player.style.top = pos.y + 'px';
 
-  // Camera đi theo
-  const camX = x - window.innerWidth / 2 + player.offsetWidth / 2;
-  const camY = y - window.innerHeight / 2 + player.offsetHeight / 2;
-
+  // Camera theo nhân vật
+  const camX = pos.x - window.innerWidth / 2 + player.offsetWidth / 2;
+  const camY = pos.y - window.innerHeight / 2 + player.offsetHeight / 2;
   window.scrollTo(camX, camY);
-});
+
+  requestAnimationFrame(update);
+}
+
+// Bắt đầu vòng lặp
+update();
 </script>
 </body>
 </html>
