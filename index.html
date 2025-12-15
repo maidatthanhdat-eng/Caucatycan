@@ -61,10 +61,10 @@ document.addEventListener('keyup', e => {
 });
 
 function update() {
-  if (keys.w) pos.y -= speed;
-  if (keys.s) pos.y += speed;
-  if (keys.a) pos.x -= speed;
-  if (keys.d) pos.x += speed;
+  if (keys.w) pos.y += speed;
+  if (keys.s) pos.y -= speed;
+  if (keys.a) pos.x += speed;
+  if (keys.d) pos.x -= speed;
 
   pos.x = Math.max(0, Math.min(pos.x, game.offsetWidth));
   pos.y = Math.max(0, Math.min(pos.y, game.offsetHeight));
