@@ -2,14 +2,47 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Câu Cá Tỷ Cân</title>
+  <title>Câu Cá Tỷ Cân - Menu</title>
   <style>
     body {
-      text-align: center;
-      background-color: #87CEFA;
+      margin: 0;
+      padding: 0;
       font-family: Arial, sans-serif;
+      background-color: #87CEFA;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      flex-direction: column;
     }
-    canvas {
+
+    h1 {
+      color: white;
+      font-size: 48px;
+      margin-bottom: 50px;
+      text-shadow: 2px 2px #000;
+    }
+
+    button {
+      font-size: 24px;
+      padding: 15px 30px;
+      margin: 10px;
+      cursor: pointer;
+      border: none;
+      border-radius: 10px;
+      background-color: orange;
+      color: white;
+      box-shadow: 2px 2px #555;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background-color: #ff9900;
+    }
+
+    #gameCanvas {
+      display: none; /* ẩn canvas lúc menu */
       border: 2px solid #000;
       background-color: #ADD8E6;
     }
@@ -17,14 +50,17 @@
 </head>
 <body>
   <h1>Câu Cá Tỷ Cân</h1>
-  <p>Dùng phím mũi tên hoặc W A S D để di chuyển</p>
+  <button id="startButton">Bắt đầu chơi</button>
+  <button id="infoButton">Hướng dẫn</button>
+
   <canvas id="gameCanvas" width="800" height="600"></canvas>
 
   <script>
+    const startButton = document.getElementById("startButton");
+    const infoButton = document.getElementById("infoButton");
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // Nhân vật
     let player = {
       x: 400,
       y: 300,
@@ -33,46 +69,49 @@
       speed: 5
     };
 
-    // Nhấn phím
     let keys = {};
 
-    window.addEventListener("keydown", (e) => {
-      keys[e.key] = true;
+    // Bắt đầu game
+    startButton.addEventListener("click", () => {
+      document.querySelector("h1").style.display = "none";
+      startButton.style.display = "none";
+      infoButton.style.display = "none";
+      canvas.style.display = "block";
+      gameLoop();
     });
 
-    window.addEventListener("keyup", (e) => {
-      keys[e.key] = false;
+    // Hướng dẫn
+    infoButton.addEventListener("click", () => {
+      alert("Dùng phím mũi tên hoặc W A S D để di chuyển nhân vật.\nSau này sẽ thả mồi câu cá.");
     });
 
-    // Vẽ nhân vật
+    // Lắng nghe phím
+    window.addEventListener("keydown", (e) => { keys[e.key] = true; });
+    window.addEventListener("keyup", (e) => { keys[e.key] = false; });
+
     function drawPlayer() {
       ctx.fillStyle = "red";
       ctx.fillRect(player.x, player.y, player.width, player.height);
     }
 
-    // Cập nhật vị trí nhân vật
     function updatePlayer() {
       if(keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
       if(keys["ArrowDown"] || keys["s"]) player.y += player.speed;
       if(keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
       if(keys["ArrowRight"] || keys["d"]) player.x += player.speed;
 
-      // Giữ nhân vật trong canvas
       if(player.x < 0) player.x = 0;
       if(player.y < 0) player.y = 0;
       if(player.x + player.width > canvas.width) player.x = canvas.width - player.width;
       if(player.y + player.height > canvas.height) player.y = canvas.height - player.height;
     }
 
-    // Vòng lặp game
     function gameLoop() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       updatePlayer();
       drawPlayer();
       requestAnimationFrame(gameLoop);
     }
-
-    gameLoop();
   </script>
 </body>
 </html>
