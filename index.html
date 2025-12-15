@@ -33,7 +33,7 @@
       border-radius: 10px;
       background-color: orange;
       color: white;
-      box-shadow: 2px 2px #555;
+      box-shadow: 3px 3px #555;
       transition: 0.2s;
     }
 
@@ -41,23 +41,52 @@
       background-color: #ff9900;
     }
 
+    #startButton {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      font-size: 36px;
+      padding: 20px 60px;
+      border-radius: 15px;
+    }
+
     #gameCanvas {
       display: none;
       border: none;
       background-color: #ADD8E6;
     }
+
+    #fishButton {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      font-size: 32px;
+      padding: 20px 40px;
+      border-radius: 15px;
+      background-color: #00AAFF;
+      color: white;
+      box-shadow: 2px 2px #555;
+      cursor: pointer;
+      display: none;
+    }
+
+    #fishButton:hover {
+      background-color: #0099DD;
+    }
   </style>
 </head>
 <body>
   <h1>Câu Cá Vạn Cân</h1>
-  <button id="startButton">Câu cá</button>
   <button id="infoButton">Hướng dẫn</button>
+  <button id="startButton">Bắt đầu chơi</button>
 
   <canvas id="gameCanvas"></canvas>
+  <button id="fishButton">Câu cá 🎣</button>
 
   <script>
     const startButton = document.getElementById("startButton");
     const infoButton = document.getElementById("infoButton");
+    const fishButton = document.getElementById("fishButton");
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
@@ -89,11 +118,24 @@
       startButton.style.display = "none";
       infoButton.style.display = "none";
       canvas.style.display = "block";
+      fishButton.style.display = "block"; // hiện nút câu cá
       gameLoop();
     });
 
     infoButton.addEventListener("click", () => {
       alert("Dùng phím mũi tên hoặc W A S D để di chuyển.\nStamina giảm khi dùng chiêu hoặc câu cá.");
+    });
+
+    // Nút câu cá
+    fishButton.addEventListener("click", () => {
+      if(playerStamina >= 10) {
+        playerStamina -= 10;
+        playerXP += 5;
+        if(playerXP > 100) playerXP = 100;
+        alert("Bạn vừa câu cá! +5 XP");
+      } else {
+        alert("Không đủ thể lực!");
+      }
     });
 
     // Lắng nghe phím
@@ -120,22 +162,22 @@
 
     function drawHUD() {
       // Thanh XP
-      ctx.fillStyle = "blue";
+      ctx.fillStyle = "lightblue";
       ctx.fillRect(20, 20, 2 * playerXP, 30);
       ctx.strokeStyle = "white";
       ctx.strokeRect(20, 20, 200, 30);
       ctx.fillStyle = "white";
       ctx.font = "16px Arial";
-      ctx.fillText("LV " + playerLevel, 230, 42);
+      ctx.fillText("Lv " + playerLevel, 230, 42);
 
       // Thanh Stamina
-      ctx.fillStyle = "red";
+      ctx.fillStyle = "lightred";
       ctx.fillRect(20, 60, 2 * playerStamina, 20);
       ctx.strokeStyle = "white";
       ctx.strokeRect(20, 60, 200, 20);
       ctx.fillStyle = "white";
       ctx.font = "14px Arial";
-      ctx.fillText("Stamina", 230, 75);
+      ctx.fillText("Thể lực", 230, 75);
     }
 
     function gameLoop() {
