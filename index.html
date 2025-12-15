@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,6 +11,7 @@ body {
   overflow: hidden;
 }
 
+/* KHUNG NHÌN */
 #viewport {
   width: 100vw;
   height: 100vh;
@@ -19,16 +20,18 @@ body {
   background: #000;
 }
 
+/* MAP */
 #game {
   width: 2000px;
   height: 1000px;
   position: absolute;
   top: 0;
   left: 0;
-  background: url('background.jpg') repeat;
+  background: url('map1.png') no-repeat;
+  background-size: cover;
 }
 
-/* PLAYER */
+/* NHÂN VẬT */
 #player {
   width: 50px;
   height: 50px;
@@ -62,12 +65,23 @@ body {
 </div>
 
 <script>
-const game = document.getElementById('game');
-const viewport = document.getElementById('viewport');
+/* ===== SETUP ===== */
+const game = document.getElementById("game");
+const viewport = document.getElementById("viewport");
 
 let pos = { x: 1000, y: 500 };
 const speed = 5;
 const keys = { w:false, a:false, s:false, d:false };
+
+/* ===== INPUT ===== */
+document.addEventListener("keydown", e => {
+  const k = e.key.toLowerCase();
+  if (k in keys) keys[k] = true;
+});
+document.addEventListener("keyup", e => {
+  const k = e.key.toLowerCase();
+  if (k in keys) keys[k] = false;
+});
 
 /* ===== TUYẾT ===== */
 const snowLayer = document.createElement("div");
@@ -87,9 +101,9 @@ function createSnow() {
   s.style.left = Math.random() * 2000 + "px";
   s.style.top = "-10px";
 
-  // 🔥 RƠI RẤT NHANH
-  s.speedY = 10 + Math.random() * 6;
-  s.speedX = 5 + Math.random() * 4;
+  // ❄️ RƠI NHANH + CHÉO
+  s.speedY = 14 + Math.random() * 10;
+  s.speedX = 7 + Math.random() * 6;
 
   snowLayer.appendChild(s);
   snows.push(s);
@@ -110,16 +124,6 @@ function updateSnow() {
   }
 }
 
-/* ===== INPUT ===== */
-document.addEventListener('keydown', e => {
-  const k = e.key.toLowerCase();
-  if (k in keys) keys[k] = true;
-});
-document.addEventListener('keyup', e => {
-  const k = e.key.toLowerCase();
-  if (k in keys) keys[k] = false;
-});
-
 /* ===== GAME LOOP ===== */
 function update() {
   if (keys.w) pos.y += speed;
@@ -127,17 +131,19 @@ function update() {
   if (keys.a) pos.x += speed;
   if (keys.d) pos.x -= speed;
 
+  // GIỚI HẠN MAP
   pos.x = Math.max(0, Math.min(pos.x, 2000));
   pos.y = Math.max(0, Math.min(pos.y, 1000));
 
+  // CAMERA
   const camX = -(pos.x - viewport.offsetWidth / 2);
   const camY = -(pos.y - viewport.offsetHeight / 2);
   game.style.transform = `translate(${camX}px, ${camY}px)`;
 
-  updateSnow(); // ❄️ tuyết rơi
-
+  updateSnow();
   requestAnimationFrame(update);
 }
+
 update();
 </script>
 
