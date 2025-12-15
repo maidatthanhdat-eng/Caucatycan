@@ -66,11 +66,9 @@ function update() {
   if (keys.a) pos.x -= speed;
   if (keys.d) pos.x += speed;
 
-  // Giới hạn map
   pos.x = Math.max(0, Math.min(pos.x, game.offsetWidth));
   pos.y = Math.max(0, Math.min(pos.y, game.offsetHeight));
 
-  // Camera follow
   const camX = viewport.offsetWidth / 2 - pos.x;
   const camY = viewport.offsetHeight / 2 - pos.y;
 
