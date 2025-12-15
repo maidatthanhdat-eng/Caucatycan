@@ -71,8 +71,8 @@ function update() {
   pos.y = Math.max(0, Math.min(pos.y, game.offsetHeight));
 
   // Camera follow
-  const camX = -(pos.x - viewport.offsetWidth / 2);
-  const camY = -(pos.y - viewport.offsetHeight / 2);
+  const camX = viewport.offsetWidth / 2 - pos.x;
+  const camY = viewport.offsetHeight / 2 - pos.y;
 
   game.style.transform = `translate(${camX}px, ${camY}px)`;
 
