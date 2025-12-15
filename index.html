@@ -1,210 +1,177 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>Câu Cá Vạn Cân</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
-      background-color: #87CEFA;
-    }
-
-    h1 {
-      color: white;
-      font-size: 48px;
-      text-align: center;
-      margin-top: 50px;
-      text-shadow: 2px 2px #000;
-    }
-
-    #startButton {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      font-size: 36px;
-      padding: 20px 60px;
-      border-radius: 15px;
-      background-color: orange;
-      color: white;
-      cursor: pointer;
-      box-shadow: 3px 3px #555;
-    }
-
-    #startButton:hover {
-      background-color: #ff9900;
-    }
-
-    #gameCanvas {
-      display: none;
-      background-color: #ADD8E6;
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
-
-    #fishButton {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      font-size: 32px;
-      padding: 20px 40px;
-      border-radius: 15px;
-      background-color: #00AAFF;
-      color: white;
-      box-shadow: 2px 2px #555;
-      cursor: pointer;
-      display: none;
-    }
-
-    #fishButton:hover {
-      background-color: #0099DD;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Câu Cá Vạn Cân</title>
+<style>
+  body { margin:0; padding:0; overflow:hidden; font-family:Arial,sans-serif; background-color:#87CEFA; }
+  h1 { color:white; font-size:48px; text-align:center; margin-top:50px; text-shadow:2px 2px #000; }
+  #startButton { position:fixed; bottom:20px; right:20px; font-size:36px; padding:20px 60px; border-radius:15px; background-color:orange; color:white; cursor:pointer; box-shadow:3px 3px #555; }
+  #startButton:hover { background-color:#ff9900; }
+  #gameCanvas { display:none; background-color:#ADD8E6; position:absolute; top:0; left:0; }
+  #fishButton { position:fixed; bottom:20px; right:20px; font-size:32px; padding:20px 40px; border-radius:15px; background-color:#00AAFF; color:white; box-shadow:2px 2px #555; cursor:pointer; display:none; }
+  #fishButton:hover { background-color:#0099DD; }
+</style>
 </head>
 <body>
-  <h1>Câu Cá Vạn Cân</h1>
-  <button id="startButton">Đi câu cá</button>
+<h1>Câu Cá Vạn Cân</h1>
+<button id="startButton">Đi câu cá</button>
+<canvas id="gameCanvas"></canvas>
+<button id="fishButton">Thả cần</button>
 
-  <canvas id="gameCanvas"></canvas>
-  <button id="fishButton">Thả cần</button>
+<script>
+const startButton = document.getElementById("startButton");
+const fishButton = document.getElementById("fishButton");
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
 
-  <script>
-    const startButton = document.getElementById("startButton");
-    const fishButton = document.getElementById("fishButton");
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+let player = { x:0, y:0, width:40, height:40, speed:5, hasRod:true };
+let playerXP = 50;
+let playerLevel = 3;
+let playerStamina = 70;
+let keys = {};
+let rodImage = new Image();
+rodImage.src = "https://i.imgur.com/Q7jX4x1.png"; // link ảnh cần câu
+let fishing = false; // trạng thái thả cần
+let lineLength = 0; // độ dài dây câu
 
-    let player = { x: 0, y: 0, width: 40, height: 40, speed: 5 };
-    let playerXP = 50;
-    let playerLevel = 3;
-    let playerStamina = 70;
-    let keys = {};
+function resizeCanvas(){
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  if(player.x ===0 && player.y===0){
+    player.x = canvas.width/2;
+    player.y = canvas.height/2;
+  }
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
 
-    function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      if(player.x === 0 && player.y === 0) {
-        player.x = canvas.width / 2;
-        player.y = canvas.height / 2;
-      }
-    }
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
+startButton.addEventListener("click", () => {
+  document.querySelector("h1").style.display="none";
+  startButton.style.display="none";
+  canvas.style.display="block";
+  fishButton.style.display="block";
+  gameLoop();
+});
 
-    startButton.addEventListener("click", () => {
-      document.querySelector("h1").style.display = "none";
-      startButton.style.display = "none";
-      canvas.style.display = "block";
-      fishButton.style.display = "block";
-      gameLoop();
-    });
-
-    fishButton.addEventListener("click", () => {
-    playerXP += 5;
-    if(playerXP > 100) playerXP = 100;
-    alert("Bạn vừa câu cá! +5 XP");
-
-    // Tạm thời bỏ các phím di chuyển để nhân vật không tự đi
-    keys["w"] = false;
-    keys["a"] = false;
-    keys["s"] = false;
-    keys["d"] = false;
-    keys["ArrowUp"] = false;
-    keys["ArrowLeft"] = false;
-    keys["ArrowDown"] = false;
-    keys["ArrowRight"] = false;
+fishButton.addEventListener("click", () => {
+  if(playerStamina >=10 && player.hasRod){
+    playerStamina -=10;
+    playerXP +=5;
+    if(playerXP>100) playerXP=100;
+    fishing = true;
+    lineLength = 0;
+    // tạm thời bỏ phím di chuyển
+    keys["w"]=false; keys["a"]=false; keys["s"]=false; keys["d"]=false;
+    keys["ArrowUp"]=false; keys["ArrowLeft"]=false; keys["ArrowDown"]=false; keys["ArrowRight"]=false;
   } else {
-    alert("Không đủ thể lực để câu cá!");
+    alert("Không đủ thể lực hoặc không có cần câu!");
   }
 });
 
-    window.addEventListener("keydown", (e) => { keys[e.key] = true; });
-    window.addEventListener("keyup", (e) => { keys[e.key] = false; });
+window.addEventListener("keydown", e=>{ keys[e.key]=true; });
+window.addEventListener("keyup", e=>{ keys[e.key]=false; });
 
-    function drawPlayer() {
-      ctx.fillStyle = "red";
-      ctx.fillRect(player.x, player.y, player.width, player.height);
+function drawPlayer(){
+  ctx.fillStyle="red";
+  ctx.fillRect(player.x, player.y, player.width, player.height);
+  if(player.hasRod){
+    // vẽ cần câu trên tay nhân vật
+    ctx.drawImage(rodImage, player.x + player.width/2 -10, player.y - rodImage.height/2, 20, 40);
+  }
+}
+
+function updatePlayer(){
+  if(keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
+  if(keys["ArrowDown"] || keys["s"]) player.y += player.speed;
+  if(keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
+  if(keys["ArrowRight"] || keys["d"]) player.x += player.speed;
+
+  if(player.x<0) player.x=0;
+  if(player.y<0) player.y=0;
+  if(player.x+player.width>canvas.width) player.x=canvas.width-player.width;
+  if(player.y+player.height>canvas.height) player.y=canvas.height-player.height;
+}
+
+function drawHUD(){
+  ctx.fillStyle="green";
+  ctx.fillRect(20,20,2*playerXP,30);
+  ctx.strokeStyle="white";
+  ctx.strokeRect(20,20,200,30);
+  ctx.fillStyle="white";
+  ctx.font="16px Arial";
+  ctx.fillText("Lv "+playerLevel,230,42);
+
+  ctx.fillStyle="yellow";
+  ctx.fillRect(20,60,2*playerStamina,20);
+  ctx.strokeStyle="white";
+  ctx.strokeRect(20,60,200,20);
+  ctx.fillStyle="white";
+  ctx.font="14px Arial";
+  ctx.fillText("Thể lực",230,75);
+}
+
+function drawFishingLine(){
+  if(fishing){
+    if(lineLength < canvas.height - player.y - player.height){
+      lineLength +=5; // tốc độ dây câu thả xuống
     }
+    ctx.strokeStyle="black";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(player.x + player.width/2, player.y + player.height/2);
+    ctx.lineTo(player.x + player.width/2, player.y + player.height/2 + lineLength);
+    ctx.stroke();
+  }
+}
 
-    function updatePlayer() {
-      if(keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
-      if(keys["ArrowDown"] || keys["s"]) player.y += player.speed;
-      if(keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
-      if(keys["ArrowRight"] || keys["d"]) player.x += player.speed;
+function gameLoop(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  updatePlayer();
+  drawPlayer();
+  drawHUD();
+  drawFishingLine();
+  requestAnimationFrame(gameLoop);
+}
 
-      if(player.x < 0) player.x = 0;
-      if(player.y < 0) player.y = 0;
-      if(player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-      if(player.y + player.height > canvas.height) player.y = canvas.height - player.height;
-    }
+// HUD menu
+function drawMenuHUD(){
+  const tempCanvas=document.createElement("canvas");
+  const tempCtx=tempCanvas.getContext("2d");
+  tempCanvas.width=window.innerWidth;
+  tempCanvas.height=window.innerHeight;
+  document.body.appendChild(tempCanvas);
+  tempCanvas.style.position="fixed";
+  tempCanvas.style.top="0";
+  tempCanvas.style.left="0";
+  tempCanvas.style.pointerEvents="none";
 
-    function drawHUD() {
-      ctx.fillStyle = "green";
-      ctx.fillRect(20, 20, 2 * playerXP, 30);
-      ctx.strokeStyle = "white";
-      ctx.strokeRect(20, 20, 200, 30);
-      ctx.fillStyle = "white";
-      ctx.font = "16px Arial";
-      ctx.fillText("Lv " + playerLevel, 230, 42);
+  function draw(){
+    tempCtx.clearRect(0,0,tempCanvas.width,tempCanvas.height);
+    // XP
+    tempCtx.fillStyle="green";
+    tempCtx.fillRect(20,20,2*playerXP,30);
+    tempCtx.strokeStyle="white";
+    tempCtx.strokeRect(20,20,200,30);
+    tempCtx.fillStyle="white";
+    tempCtx.font="16px Arial";
+    tempCtx.fillText("Lv "+playerLevel,230,42);
 
-      ctx.fillStyle = "yellow";
-      ctx.fillRect(20, 60, 2 * playerStamina, 20);
-      ctx.strokeStyle = "white";
-      ctx.strokeRect(20, 60, 200, 20);
-      ctx.fillStyle = "white";
-      ctx.font = "14px Arial";
-      ctx.fillText("Thể lực", 230, 75);
-    }
+    // Stamina
+    tempCtx.fillStyle="yellow";
+    tempCtx.fillRect(20,60,2*playerStamina,20);
+    tempCtx.strokeStyle="white";
+    tempCtx.strokeRect(20,60,200,20);
+    tempCtx.fillStyle="white";
+    tempCtx.font="14px Arial";
+    tempCtx.fillText("Thể lực",230,75);
 
-    function gameLoop() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      updatePlayer();
-      drawPlayer();
-      drawHUD();
-      requestAnimationFrame(gameLoop);
-    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
 
-    // HUD luôn hiển thị cả lúc menu
-    function drawMenuHUD() {
-      const tempCanvas = document.createElement("canvas");
-      const tempCtx = tempCanvas.getContext("2d");
-      tempCanvas.width = window.innerWidth;
-      tempCanvas.height = window.innerHeight;
-      document.body.appendChild(tempCanvas);
-      tempCanvas.style.position = "fixed";
-      tempCanvas.style.top = "0";
-      tempCanvas.style.left = "0";
-      tempCanvas.style.pointerEvents = "none";
-
-      function draw() {
-        tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
-        // XP
-        tempCtx.fillStyle = "green";
-        tempCtx.fillRect(20, 20, 2 * playerXP, 30);
-        tempCtx.strokeStyle = "white";
-        tempCtx.strokeRect(20, 20, 200, 30);
-        tempCtx.fillStyle = "white";
-        tempCtx.font = "16px Arial";
-        tempCtx.fillText("Lv " + playerLevel, 230, 42);
-
-        // Stamina
-        tempCtx.fillStyle = "yellow";
-        tempCtx.fillRect(20, 60, 2 * playerStamina, 20);
-        tempCtx.strokeStyle = "white";
-        tempCtx.strokeRect(20, 60, 200, 20);
-        tempCtx.fillStyle = "white";
-        tempCtx.font = "14px Arial";
-        tempCtx.fillText("Thể lực", 230, 75);
-
-        requestAnimationFrame(draw);
-      }
-      draw();
-    }
-
-    drawMenuHUD();
-  </script>
+drawMenuHUD();
+</script>
 </body>
 </html>
