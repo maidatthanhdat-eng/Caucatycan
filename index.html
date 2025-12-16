@@ -12,7 +12,14 @@
         body {
             margin: 0;
             overflow: hidden; 
-            background-color: #4682B4; 
+            
+            /* CẬP NHẬT BACKGROUND MỚI */
+            background-image: url('background2.png'); 
+            background-size: cover; /* Đảm bảo hình nền bao phủ toàn bộ màn hình */
+            background-repeat: no-repeat;
+            background-position: center;
+            /* background-color: #4682B4; <--- Màu nền cũ bị ghi đè */
+            
             font-family: sans-serif;
             width: 100vw;
             height: 100vh;
@@ -23,6 +30,8 @@
             width: 80px;  
             height: 120px; 
             position: absolute; 
+
+            transition: transform 0.1ease-out;
             
             background-image: url('santachuoibi.jpg'); 
             background-size: contain;   
@@ -30,8 +39,6 @@
             background-position: center;
             background-color: transparent; 
             border: none;
-            
-            position: absolute; 
         }
 
         /* ================================================= */
@@ -44,8 +51,6 @@
             
             top: -40px;   
             left: -10px; 
-            
-            transform: rotate(20deg); 
 
             background-image: url('RodOfTheDepths.jpg'); 
             background-size: contain; 
@@ -74,86 +79,119 @@
     </div>
     <div id="controls-info">Sử dụng WASD để di chuyển</div>
 
-    <script>
-        /* ================================================= */
-        /* PHẦN JAVASCRIPT (Logic Game)                       */
-        /* ================================================= */
+        <script>
+    /* ================================================= */
+    /* PHẦN JAVASCRIPT (Logic Game)                       */
+    /* ================================================= */
 
-        const player = document.getElementById('player');
+    const player = document.getElementById('player');
+    const rod = document.getElementById('fishing-rod');
 
-        let playerX = 0; 
-        let playerY = 0; 
-        const speed = 5; 
-        let velX = 0; 
-        let velY = 0; 
+    let playerX = 0; 
+    let playerY = 0; 
+    const speed = 5; 
+    let velX = 0; 
+    let velY = 0; 
 
-        const keysPressed = {}; 
-        let playerWidth, playerHeight;
+    const keysPressed = {}; 
+    let playerWidth, playerHeight;
+    
+    // === BIẾN MỚI ĐỂ GHI NHỚ HƯỚNG QUAY ===
+    let isFacingRight = true; // Ban đầu nhân vật hướng sang phải
 
-        function gameLoop() {
-            // --- LOGIC DI CHUYỂN NHÂN VẬT ---
-            velX = 0; velY = 0;
-            if (keysPressed['w'] || keysPressed['W']) { velY = -speed; }
-            if (keysPressed['s'] || keysPressed['S']) { velY = speed; }
-            if (keysPressed['a'] || keysPressed['A']) { velX = -speed; }
-            if (keysPressed['d'] || keysPressed['D']) { velX = speed; }
-
-            if (velX !== 0 && velY !== 0) { velX /= 1.414; velY /= 1.414; }
-
-            let nextX = playerX + velX; let nextY = playerY + velY;
-
-            if (nextX >= 0 && nextX <= window.innerWidth - playerWidth) { playerX = nextX; } 
-            else if (nextX < 0) { playerX = 0; } 
-            else if (nextX > window.innerWidth - playerWidth) { playerX = window.innerWidth - playerWidth; }
-
-            if (nextY >= 0 && nextY <= window.innerHeight - playerHeight) { playerY = nextY; } 
-            else if (nextY < 0) { playerY = 0; } 
-            else if (nextY > window.innerHeight - playerHeight) { playerY = window.innerHeight - playerHeight; }
-
-            player.style.left = playerX + 'px'; player.style.top = playerY + 'px';
+    function applyRotation() {
+        if (isFacingRight) {
+            // Hướng sang phải (mặc định)
+            player.style.transform = 'scaleX(1)'; 
+            // Cần câu không lật, chỉ xoay 20 độ
+            rod.style.transform = 'scaleX(1) rotate(20deg)'; 
+        } else {
+            // Hướng sang trái (đã lật)
+            player.style.transform = 'scaleX(-1)'; 
             
-            requestAnimationFrame(gameLoop);
+            rod.style.transform = 'scaleX(1) rotate(20deg)'; 
+        }
+    }
+
+    function gameLoop() {
+        // --- LOGIC DI CHUYỂN NHÂN VẬT ---
+        velX = 0; velY = 0;
+        
+        // Cập nhật vận tốc dựa trên phím W/S
+        if (keysPressed['w'] || keysPressed['W']) { velY = -speed; }
+        if (keysPressed['s'] || keysPressed['S']) { velY = speed; }
+        
+        // Cập nhật vận tốc và CẬP NHẬT HƯỚNG QUAY DỰA TRÊN PHÍM A/D
+        if (keysPressed['a'] || keysPressed['A']) { 
+            velX = -speed;
+            isFacingRight = false; // Nhân vật đang di chuyển sang trái
+        }
+        if (keysPressed['d'] || keysPressed['D']) { 
+            velX = speed;
+            isFacingRight = true;  // Nhân vật đang di chuyển sang phải
         }
 
-        // ===================================
-        // XỬ LÝ SỰ KIỆN PHÍM
-        // ===================================
-        document.addEventListener('keydown', (event) => {
-            keysPressed[event.key] = true;
-            if (['w', 'a', 's', 'd'].includes(event.key.toLowerCase())) { event.preventDefault(); }
-        });
+        if (velX !== 0 && velY !== 0) { velX /= 1.414; velY /= 1.414; }
 
-        document.addEventListener('keyup', (event) => {
-            keysPressed[event.key] = false;
-        });
+        let nextX = playerX + velX; let nextY = playerY + velY;
 
-        // ===================================
-        // KHỞI TẠO VÀ CHỐNG ZOOM
-        // ===================================
-        function initializeGame() {
-            playerWidth = player.clientWidth; playerHeight = player.clientHeight;
-            playerX = (window.innerWidth - playerWidth) / 2; playerY = (window.innerHeight - playerHeight) / 2;
-            
-            gameLoop();
+        // Giới hạn di chuyển (giữ nguyên)
+        if (nextX >= 0 && nextX <= window.innerWidth - playerWidth) { playerX = nextX; } 
+        else if (nextX < 0) { playerX = 0; } 
+        else if (nextX > window.innerWidth - playerWidth) { playerX = window.innerWidth - playerWidth; }
+
+        if (nextY >= 0 && nextY <= window.innerHeight - playerHeight) { playerY = nextY; } 
+        else if (nextY < 0) { playerY = 0; } 
+        else if (nextY > window.innerHeight - playerHeight) { playerY = window.innerHeight - playerHeight; }
+
+        player.style.left = playerX + 'px'; player.style.top = playerY + 'px';
+
+        // --- GỌI HÀM ÁP DỤNG XOAY (KHÔNG CẦN KIỂM TRA PHÍM) ---
+        applyRotation(); 
+        
+        requestAnimationFrame(gameLoop);
+    }
+
+    // ===================================
+    // XỬ LÝ SỰ KIỆN PHÍM (Giữ nguyên)
+    // ===================================
+    document.addEventListener('keydown', (event) => {
+        keysPressed[event.key] = true;
+        if (['w', 'a', 's', 'd'].includes(event.key.toLowerCase())) { event.preventDefault(); }
+    });
+
+    document.addEventListener('keyup', (event) => {
+        keysPressed[event.key] = false;
+    });
+
+    // ===================================
+    // KHỞI TẠO VÀ CHỐNG ZOOM (Giữ nguyên)
+    // ===================================
+    function initializeGame() {
+        playerWidth = player.clientWidth; playerHeight = player.clientHeight;
+        playerX = (window.innerWidth - playerWidth) / 2; playerY = (window.innerHeight - playerHeight) / 2;
+        
+        applyRotation(); // Áp dụng hướng ban đầu
+        gameLoop();
+    }
+    
+    window.addEventListener('resize', initializeGame);
+    window.onload = initializeGame;
+    
+    /* LOGIC NGĂN CHẶN ZOOM (Giữ nguyên) */
+    document.addEventListener('keydown', function(event) {
+        if ((event.ctrlKey || event.metaKey) && 
+            (event.key === '=' || event.key === '-' || event.key === '0')) {
+            event.preventDefault();
         }
-        
-        window.addEventListener('resize', initializeGame);
-        window.onload = initializeGame;
-        
-        /* LOGIC NGĂN CHẶN ZOOM */
-        document.addEventListener('keydown', function(event) {
-            if ((event.ctrlKey || event.metaKey) && 
-                (event.key === '=' || event.key === '-' || event.key === '0')) {
-                event.preventDefault();
-            }
-        });
+    });
 
-        document.addEventListener('wheel', function(event) {
-            if (event.ctrlKey || event.metaKey) {
-                event.preventDefault();
-            }
-        }, { passive: false }); 
+    document.addEventListener('wheel', function(event) {
+        if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+        }
+    }, { passive: false }); 
 
-    </script>
+</script>
 </body>
 </html>
