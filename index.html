@@ -12,26 +12,36 @@
         body {
             margin: 0;
             overflow: hidden; 
-            
-            /* CẬP NHẬT BACKGROUND MỚI */
-            background-image: url('background2.png'); 
-            background-size: cover; /* Đảm bảo hình nền bao phủ toàn bộ màn hình */
-            background-repeat: no-repeat;
-            background-position: center;
-            /* background-color: #4682B4; <--- Màu nền cũ bị ghi đè */
-            
+            /* Body chỉ giữ vai trò viewport và màu dự phòng */
+            background-color: #4682B4; 
             font-family: sans-serif;
             width: 100vw;
             height: 100vh;
             position: relative;
         }
 
+        /* === KHUNG CHỨA CAMERA MỚI === */
+        #game-container {
+            position: absolute; 
+            width: 100%;
+            height: 100%;
+            
+            /* HÌNH NỀN ĐƯỢC CHUYỂN VÀO KHUNG CHỨA NÀY */
+            background-image: url('background2.png'); 
+            background-size: cover; /* Đảm bảo hình nền bao phủ toàn bộ màn hình */
+            background-repeat: no-repeat;
+            background-position: center;
+
+	    transition: transform 0.22s linear;	   
+        }
+
         #player {
             width: 80px;  
             height: 120px; 
             position: absolute; 
-
-            transition: transform 0.1ease-out;
+            
+            /* Thêm transition cho nhân vật lật mượt hơn */
+            transition: transform 0.01s ease-out; 
             
             background-image: url('santachuoibi.jpg'); 
             background-size: contain;   
@@ -51,6 +61,9 @@
             
             top: -40px;   
             left: -10px; 
+            
+            /* Đặt điểm xoay cho cần câu để khi lật không bị lệch */
+            transform-origin: 30% 70%; 
 
             background-image: url('RodOfTheDepths.jpg'); 
             background-size: contain; 
@@ -59,7 +72,7 @@
         }
 
         #controls-info {
-            position: fixed; 
+            position: fixed; /* Giữ cố định trên màn hình */
             top: 10px;
             left: 10px;
             color: white;
@@ -73,81 +86,104 @@
     </style>
 </head>
 <body>
-
-    <div id="player">
-        <div id="fishing-rod"></div> 
+    
+    <div id="game-container">
+        <div id="player">
+            <div id="fishing-rod"></div> 
+        </div>
     </div>
+    
     <div id="controls-info">Sử dụng WASD để di chuyển</div>
 
-        <script>
+    <script>
     /* ================================================= */
     /* PHẦN JAVASCRIPT (Logic Game)                       */
     /* ================================================= */
 
+    const gameContainer = document.getElementById('game-container');
     const player = document.getElementById('player');
     const rod = document.getElementById('fishing-rod');
 
     let playerX = 0; 
     let playerY = 0; 
-    const speed = 5; 
+    const speed = 6; 
     let velX = 0; 
     let velY = 0; 
 
     const keysPressed = {}; 
     let playerWidth, playerHeight;
+    let isFacingRight = true; 
     
-    // === BIẾN MỚI ĐỂ GHI NHỚ HƯỚNG QUAY ===
-    let isFacingRight = true; // Ban đầu nhân vật hướng sang phải
+    // Biến để lưu kích thước màn hình
+    let viewWidth = window.innerWidth;
+    let viewHeight = window.innerHeight;
+
+    // === BIẾN ZOOM MỚI ===
+    let currentZoom = 1.0; 
+    const ZOOM_INCREMENT = 0.05; // Mức tăng/giảm zoom mỗi lần nhấn
+    const MIN_ZOOM = 0.5; // Giới hạn thu nhỏ
+    const MAX_ZOOM = 2.0; // Giới hạn phóng to
 
     function applyRotation() {
         if (isFacingRight) {
-            // Hướng sang phải (mặc định)
             player.style.transform = 'scaleX(1)'; 
-            // Cần câu không lật, chỉ xoay 20 độ
             rod.style.transform = 'scaleX(1) rotate(20deg)'; 
         } else {
-            // Hướng sang trái (đã lật)
             player.style.transform = 'scaleX(-1)'; 
-            
             rod.style.transform = 'scaleX(1) rotate(20deg)'; 
         }
+    }
+
+    function updateCamera() {
+        // 1. Tính toán vị trí trung tâm màn hình (Camera Follow)
+        const centerX = viewWidth / 2;
+        const centerY = viewHeight / 2;
+        const camX = centerX - (playerX + playerWidth / 2);
+        const camY = centerY - (playerY + playerHeight / 2);
+
+        // 2. Áp dụng dịch chuyển VÀ PHÓNG TO (ZOOM)
+        // Kết hợp translate (theo dõi) và scale (phóng to)
+        gameContainer.style.transform = `translate(${camX}px, ${camY}px) scale(${1})`;
     }
 
     function gameLoop() {
         // --- LOGIC DI CHUYỂN NHÂN VẬT ---
         velX = 0; velY = 0;
         
-        // Cập nhật vận tốc dựa trên phím W/S
         if (keysPressed['w'] || keysPressed['W']) { velY = -speed; }
         if (keysPressed['s'] || keysPressed['S']) { velY = speed; }
         
-        // Cập nhật vận tốc và CẬP NHẬT HƯỚNG QUAY DỰA TRÊN PHÍM A/D
         if (keysPressed['a'] || keysPressed['A']) { 
             velX = -speed;
-            isFacingRight = false; // Nhân vật đang di chuyển sang trái
+            isFacingRight = false; 
         }
         if (keysPressed['d'] || keysPressed['D']) { 
             velX = speed;
-            isFacingRight = true;  // Nhân vật đang di chuyển sang phải
+            isFacingRight = true;  
+        }
+
+        // --- LOGIC ZOOM DÙNG Q VÀ E (Chỉ thực hiện 1 lần khi nhấn phím) ---
+        // Lưu ý: Logic này được xử lý tốt hơn trong keydown, nhưng giữ ở đây để dễ theo dõi
+        
+        if (keysPressed['q'] || keysPressed['Q']) {
+            // Phóng to (Zoom In)
+            currentZoom = Math.min(MAX_ZOOM, currentZoom + ZOOM_INCREMENT);
+        }
+        if (keysPressed['e'] || keysPressed['E']) {
+            // Thu nhỏ (Zoom Out)
+            currentZoom = Math.max(MIN_ZOOM, currentZoom - ZOOM_INCREMENT);
         }
 
         if (velX !== 0 && velY !== 0) { velX /= 1.414; velY /= 1.414; }
 
-        let nextX = playerX + velX; let nextY = playerY + velY;
+        playerX += velX; 
+        playerY += velY;
 
-        // Giới hạn di chuyển (giữ nguyên)
-        if (nextX >= 0 && nextX <= window.innerWidth - playerWidth) { playerX = nextX; } 
-        else if (nextX < 0) { playerX = 0; } 
-        else if (nextX > window.innerWidth - playerWidth) { playerX = window.innerWidth - playerWidth; }
+        player.style.left = playerX + 'px'; 
+        player.style.top = playerY + 'px';
 
-        if (nextY >= 0 && nextY <= window.innerHeight - playerHeight) { playerY = nextY; } 
-        else if (nextY < 0) { playerY = 0; } 
-        else if (nextY > window.innerHeight - playerHeight) { playerY = window.innerHeight - playerHeight; }
-
-        player.style.left = playerX + 'px'; player.style.top = playerY + 'px';
-
-        // --- GỌI HÀM ÁP DỤNG XOAY (KHÔNG CẦN KIỂM TRA PHÍM) ---
         applyRotation(); 
+        updateCamera();
         
         requestAnimationFrame(gameLoop);
     }
@@ -157,7 +193,10 @@
     // ===================================
     document.addEventListener('keydown', (event) => {
         keysPressed[event.key] = true;
-        if (['w', 'a', 's', 'd'].includes(event.key.toLowerCase())) { event.preventDefault(); }
+        // Ngăn chặn hành vi mặc định của phím di chuyển và phím zoom
+        if (['w', 'a', 's', 'd', 'q', 'e'].includes(event.key.toLowerCase())) { 
+            event.preventDefault(); 
+        }
     });
 
     document.addEventListener('keyup', (event) => {
@@ -165,20 +204,26 @@
     });
 
     // ===================================
-    // KHỞI TẠO VÀ CHỐNG ZOOM (Giữ nguyên)
+    // KHỞI TẠO VÀ CHỐNG ZOOM
     // ===================================
     function initializeGame() {
-        playerWidth = player.clientWidth; playerHeight = player.clientHeight;
-        playerX = (window.innerWidth - playerWidth) / 2; playerY = (window.innerHeight - playerHeight) / 2;
+        playerWidth = player.clientWidth; 
+        playerHeight = player.clientHeight;
+        viewWidth = window.innerWidth;
+        viewHeight = window.innerHeight;
+
+        playerX = (viewWidth - playerWidth) / 2;
+        playerY = (viewHeight - playerHeight) / 2;
         
-        applyRotation(); // Áp dụng hướng ban đầu
+        applyRotation(); 
+        updateCamera(); 
         gameLoop();
     }
     
     window.addEventListener('resize', initializeGame);
     window.onload = initializeGame;
     
-    /* LOGIC NGĂN CHẶN ZOOM (Giữ nguyên) */
+    /* LOGIC NGĂN CHẶN ZOOM MẶC ĐỊNH TRÌNH DUYỆT (Giữ nguyên) */
     document.addEventListener('keydown', function(event) {
         if ((event.ctrlKey || event.metaKey) && 
             (event.key === '=' || event.key === '-' || event.key === '0')) {
