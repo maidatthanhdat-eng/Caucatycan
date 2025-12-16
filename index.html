@@ -1,100 +1,159 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Câu Cá Tỷ Cân - No Collision</title>
-<style>
-body{margin:0;overflow:hidden;}
-#viewport{width:100vw;height:100vh;overflow:hidden;position:relative;background:#000;}
-#game{width:612px;height:193px;position:absolute;top:0;left:0;background:url('map1.png') no-repeat;background-size:cover;}
-#player{width:50px;height:50px;position:absolute;background:url('santachuoibi.jpg') center/cover no-repeat;pointer-events:none;}
-.snow{position:absolute;width:6px;height:6px;background:white;border-radius:50%;opacity:0.9;pointer-events:none;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Câu Cá Tỷ Cân</title>
+    
+    <style>
+        /* ================================================= */
+        /* PHẦN CSS (Định kiểu)                */
+        /* ================================================= */
+        body {
+            margin: 0;
+            overflow: hidden; 
+            background-color: #4682B4; 
+            font-family: sans-serif;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #player {
+            width: 80px;  
+            height: 120px; 
+            position: absolute; 
+            
+            background-image: url('santachuoibi.jpg'); 
+            background-size: contain;   
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: transparent; 
+            border: none;
+            
+            position: absolute; 
+        }
+
+        /* ================================================= */
+        /* ĐỊNH KIỂU CHO CẦN CÂU (CHỈ CẦN CÂU)               */
+        /* ================================================= */
+        #fishing-rod {
+            width: 200px;  /* Chiều rộng cần câu */
+            height: 150px; /* Chiều cao cần câu */
+            position: absolute; 
+            
+            top: -40px;   
+            left: -10px; 
+            
+            transform: rotate(20deg); 
+
+            background-image: url('RodOfTheDepths.jpg'); 
+            background-size: contain; 
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        #controls-info {
+            position: fixed; 
+            top: 10px;
+            left: 10px;
+            color: white;
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 5px;
+            font-size: 16px;
+            z-index: 100;
+        }
+
+    </style>
 </head>
 <body>
-<div id="viewport">
-  <div id="game">
-    <div id="player"></div>
-  </div>
-</div>
 
-<script>
-const game=document.getElementById("game");
-const viewport=document.getElementById("viewport");
-const player=document.getElementById("player");
+    <div id="player">
+        <div id="fishing-rod"></div> 
+    </div>
+    <div id="controls-info">Sử dụng WASD để di chuyển</div>
 
-const mapWidth=612,mapHeight=193;
-const playerW=50,playerH=50;
-const speed=5;
-let pos={x:20,y:mapHeight-playerH-10}; // spawn dưới bên trái
-let keys={w:false,a:false,s:false,d:false};
+    <script>
+        /* ================================================= */
+        /* PHẦN JAVASCRIPT (Logic Game)                       */
+        /* ================================================= */
 
-/* INPUT */
-document.addEventListener("keydown",e=>{const k=e.key.toLowerCase(); if(k in keys) keys[k]=true;});
-document.addEventListener("keyup",e=>{const k=e.key.toLowerCase(); if(k in keys) keys[k]=false;});
+        const player = document.getElementById('player');
 
-/* TUYẾT */
-const snowLayer=document.createElement("div");
-snowLayer.style.position="absolute";
-snowLayer.style.width=mapWidth+"px";
-snowLayer.style.height=mapHeight+"px";
-snowLayer.style.pointerEvents="none";
-game.appendChild(snowLayer);
+        let playerX = 0; 
+        let playerY = 0; 
+        const speed = 5; 
+        let velX = 0; 
+        let velY = 0; 
 
-const snows=[];
-function createSnow(){
-  const s=document.createElement("div");
-  s.className="snow";
-  s.style.left=Math.random()*mapWidth+"px";
-  s.style.top="-10px";
-  s.speedY=5+Math.random()*5;
-  s.speedX=1+Math.random()*2;
-  snowLayer.appendChild(s);
-  snows.push(s);
-}
-function updateSnow(){
-  if(snows.length<50) createSnow();
-  for(let i=snows.length-1;i>=0;i--){
-    const s=snows[i];
-    s.style.top=(s.offsetTop+s.speedY)+"px";
-    s.style.left=(s.offsetLeft+s.speedX)+"px";
-    if(s.offsetTop>mapHeight||s.offsetLeft>mapWidth){ s.remove(); snows.splice(i,1);}
-  }
-}
+        const keysPressed = {}; 
+        let playerWidth, playerHeight;
 
-/* GAME LOOP */
-function update(){
-  let moveX=0, moveY=0;
-  if(keys.w) moveY-=speed;
-  if(keys.s) moveY+=speed;
-  if(keys.a) moveX-=speed;
-  if(keys.d) moveX+=speed;
+        function gameLoop() {
+            // --- LOGIC DI CHUYỂN NHÂN VẬT ---
+            velX = 0; velY = 0;
+            if (keysPressed['w'] || keysPressed['W']) { velY = -speed; }
+            if (keysPressed['s'] || keysPressed['S']) { velY = speed; }
+            if (keysPressed['a'] || keysPressed['A']) { velX = -speed; }
+            if (keysPressed['d'] || keysPressed['D']) { velX = speed; }
 
-  pos.x+=moveX;
-  pos.y+=moveY;
+            if (velX !== 0 && velY !== 0) { velX /= 1.414; velY /= 1.414; }
 
-  // giới hạn trong map
-  pos.x=Math.max(0,Math.min(pos.x,mapWidth-playerW));
-  pos.y=Math.max(0,Math.min(pos.y,mapHeight-playerH));
+            let nextX = playerX + velX; let nextY = playerY + velY;
 
-  // camera follow
-  let camX=pos.x-viewport.offsetWidth/2+playerW/2;
-  let camY=pos.y-viewport.offsetHeight/2+playerH/2;
-  camX=Math.max(0,Math.min(camX,mapWidth-viewport.offsetWidth));
-  camY=Math.max(0,Math.min(camY,mapHeight-viewport.offsetHeight));
+            if (nextX >= 0 && nextX <= window.innerWidth - playerWidth) { playerX = nextX; } 
+            else if (nextX < 0) { playerX = 0; } 
+            else if (nextX > window.innerWidth - playerWidth) { playerX = window.innerWidth - playerWidth; }
 
-  game.style.transform=`translate(${-camX}px,${-camY}px)`;
-  player.style.left=(pos.x-camX)+"px";
-  player.style.top=(pos.y-camY)+"px";
+            if (nextY >= 0 && nextY <= window.innerHeight - playerHeight) { playerY = nextY; } 
+            else if (nextY < 0) { playerY = 0; } 
+            else if (nextY > window.innerHeight - playerHeight) { playerY = window.innerHeight - playerHeight; }
 
-  updateSnow();
-  requestAnimationFrame(update);
-}
+            player.style.left = playerX + 'px'; player.style.top = playerY + 'px';
+            
+            requestAnimationFrame(gameLoop);
+        }
 
-update();
-</script>
+        // ===================================
+        // XỬ LÝ SỰ KIỆN PHÍM
+        // ===================================
+        document.addEventListener('keydown', (event) => {
+            keysPressed[event.key] = true;
+            if (['w', 'a', 's', 'd'].includes(event.key.toLowerCase())) { event.preventDefault(); }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            keysPressed[event.key] = false;
+        });
+
+        // ===================================
+        // KHỞI TẠO VÀ CHỐNG ZOOM
+        // ===================================
+        function initializeGame() {
+            playerWidth = player.clientWidth; playerHeight = player.clientHeight;
+            playerX = (window.innerWidth - playerWidth) / 2; playerY = (window.innerHeight - playerHeight) / 2;
+            
+            gameLoop();
+        }
+        
+        window.addEventListener('resize', initializeGame);
+        window.onload = initializeGame;
+        
+        /* LOGIC NGĂN CHẶN ZOOM */
+        document.addEventListener('keydown', function(event) {
+            if ((event.ctrlKey || event.metaKey) && 
+                (event.key === '=' || event.key === '-' || event.key === '0')) {
+                event.preventDefault();
+            }
+        });
+
+        document.addEventListener('wheel', function(event) {
+            if (event.ctrlKey || event.metaKey) {
+                event.preventDefault();
+            }
+        }, { passive: false }); 
+
+    </script>
 </body>
 </html>
-
-
