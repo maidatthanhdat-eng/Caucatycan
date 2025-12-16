@@ -3,46 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Santa Fishing Final Edition</title>
+    <title>Santa Fishing - Fixed Map</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #1a1a1a; font-family: sans-serif; }
         
-        /* Đã đổi từ .jpg sang .png cho khớp GitHub */
         #game-container { 
-            position: absolute; width: 1200px; height: 846px; 
-            background-image: url('map1.png'); 
-            background-size: contain; background-repeat: no-repeat; background-position: center; 
+            position: absolute; 
+            width: 1200px; 
+            height: 846px; 
+            /* ĐÃ SỬA: Khớp với tên file background2.png trên GitHub */
+            background-image: url('background2.png'); 
+            background-size: contain; 
+            background-repeat: no-repeat; 
+            background-position: center; 
         }
 
-        #player {
-            width: 100px; height: 160px; position: absolute; z-index: 10;
-            background-image: url('player.png'); /* Đảm bảo bạn đã upload file này */
-            background-size: contain; background-repeat: no-repeat; background-position: center;
+        #player { 
+            width: 100px; 
+            height: 160px; 
+            position: absolute; 
+            z-index: 10;
+            /* Khớp với file thkgay.png trên GitHub */
+            background-image: url('thkgay.png'); 
+            background-size: contain; 
+            background-repeat: no-repeat; 
+            background-position: center;
         }
 
         #fishing-rod {
-            width: 130px; height: 130px; position: absolute;
-            top: -31px; left: 77px; 
+            width: 130px; 
+            height: 130px; 
+            position: absolute;
+            top: -31px; 
+            left: 77px; 
             transform-origin: 5% 95%;
-            /* Đã đổi từ .png sang .jpg cho khớp GitHub */
+            /* Khớp với file RodOfTheDepths.jpg trên GitHub */
             background-image: url('RodOfTheDepths.jpg'); 
-            background-size: contain; background-repeat: no-repeat;
-            z-index: 11; transition: transform 0.1s ease-out; transform: rotate(-15deg);
+            background-size: contain; 
+            background-repeat: no-repeat;
+            z-index: 11; 
+            transition: transform 0.1s ease-out; 
+            transform: rotate(-15deg);
         }
 
         .fishing-line {
-            position: absolute; background: #ffffff; width: 1.5px; z-index: 9;
-            transform-origin: top center; box-shadow: 0 0 3px #fff;
+            position: absolute; 
+            background: #ffffff; 
+            width: 1.5px; 
+            z-index: 9;
+            transform-origin: top center; 
+            box-shadow: 0 0 3px #fff;
         }
 
         #controls-info { 
-            position: fixed; top: 10px; left: 10px; color: white; padding: 10px; 
-            background: rgba(0, 0, 0, 0.7); border-radius: 5px; z-index: 100; 
+            position: fixed; 
+            top: 10px; 
+            left: 10px; 
+            color: white; 
+            padding: 10px; 
+            background: rgba(0, 0, 0, 0.7); 
+            border-radius: 5px; 
+            z-index: 100; 
         }
     </style>
 </head>
 <body>
-    <div id="controls-info">Phím: WASD (Di chuyển), SPACE (Quăng cần)</div>
+    <div id="controls-info">Di chuyển: WASD | Quăng cần: SPACE</div>
     <div id="game-container">
         <div id="player"><div id="fishing-rod"></div></div>
     </div>
@@ -57,7 +83,7 @@
     let isFacingRight = true, isFishing = false;
     const keysPressed = {};
 
-    // Tọa độ dây câu chuẩn bạn đã chỉnh
+    // Tọa độ dây câu chuẩn đã dính liền đầu cần
     const LINE_PIVOT_X = 88;
     const LINE_PIVOT_Y = -23;
 
@@ -74,16 +100,22 @@
 
         const line = document.createElement("div");
         line.className = "fishing-line";
-        line.style.left = tipX + "px"; line.style.top = tipY + "px";
+        line.style.left = tipX + "px"; 
+        line.style.top = tipY + "px";
         gameContainer.appendChild(line);
 
         let len = 0;
         const anim = setInterval(() => {
-            len += 18; line.style.height = len + "px";
+            len += 18; 
+            line.style.height = len + "px";
             line.style.transform = `rotate(${isFacingRight ? 1 : -1}deg)`;
             if(len > 350) {
                 clearInterval(anim);
-                setTimeout(() => { line.remove(); rod.style.transform = "rotate(-15deg)"; isFishing = false; }, 700);
+                setTimeout(() => { 
+                    line.remove(); 
+                    rod.style.transform = "rotate(-15deg)"; 
+                    isFishing = false; 
+                }, 700);
             }
         }, 20);
     }
@@ -95,8 +127,8 @@
             if (keysPressed['s']) velY = speed;
             if (keysPressed['a']) { velX = -speed; isFacingRight = false; }
             if (keysPressed['d']) { velX = speed; isFacingRight = true; }
-            // Tạm thời bỏ qua va chạm nếu bạn chưa upload file collision.png
-            playerX += velX; playerY += velY;
+            playerX += velX; 
+            playerY += velY;
         }
         player.style.left = playerX + 'px';
         player.style.top = playerY + 'px';
