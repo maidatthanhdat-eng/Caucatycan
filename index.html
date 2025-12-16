@@ -3,240 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Câu Cá Tỷ Cân</title>
-    
+    <title>Câu Cá Tỷ Cân - Santa Fishing Final Edition</title>
     <style>
-        /* ================================================= */
-        /* PHẦN CSS (Định kiểu)                */
-        /* ================================================= */
-        body {
-            margin: 0;
-            overflow: hidden; 
-            /* Body chỉ giữ vai trò viewport và màu dự phòng */
-            background-color: #4682B4; 
-            font-family: sans-serif;
-            width: 100vw;
-            height: 100vh;
-            position: relative;
-        }
-
-        /* === KHUNG CHỨA CAMERA MỚI === */
-        #game-container {
+        body { margin: 0; overflow: hidden; background-color: #1a1a1a; font-family: sans-serif; }
+        #game-container { 
             position: absolute; 
-            width: 100%;
-            height: 100%;
-            
-            /* HÌNH NỀN ĐƯỢC CHUYỂN VÀO KHUNG CHỨA NÀY */
-            background-image: url('background2.png'); 
-            background-size: cover; /* Đảm bảo hình nền bao phủ toàn bộ màn hình */
-            background-repeat: no-repeat;
-            background-position: center;
-
-	    transition: transform 0.22s linear;	   
+            width: 1200px; 
+            height: 846px; 
+            background-image: url('map1.jpg'); 
+            background-size: contain; 
+            background-repeat: no-repeat; 
+            background-position: center; 
         }
 
         #player {
-            width: 80px;  
-            height: 120px; 
+            width: 100px; height: 160px; 
             position: absolute; 
-            
-            /* Thêm transition cho nhân vật lật mượt hơn */
-            transition: transform 0.01s ease-out; 
-            
-            background-image: url('santachuoibi.jpg'); 
-            background-size: contain;   
-            background-repeat: no-repeat;
+            z-index: 10;
+            background-image: url('player.png'); 
+            background-size: contain; 
+            background-repeat: no-repeat; 
             background-position: center;
-            background-color: transparent; 
-            border: none;
         }
 
-        /* ================================================= */
-        /* ĐỊNH KIỂU CHO CẦN CÂU (CHỈ CẦN CÂU)               */
-        /* ================================================= */
         #fishing-rod {
-            width: 200px;  /* Chiều rộng cần câu */
-            height: 150px; /* Chiều cao cần câu */
+            width: 130px; height: 130px;
             position: absolute; 
-            
-            top: -40px;   
-            left: -10px; 
-            
-            /* Đặt điểm xoay cho cần câu để khi lật không bị lệch */
-            transform-origin: 30% 70%; 
-
-            background-image: url('RodOfTheDepths.jpg'); 
+            /* TỌA ĐỘ CẦN CÂU CHUẨN */
+            top: -31px; 
+            left: 77px; 
+            transform-origin: 5% 95%; 
+            background-image: url('RodOfTheDepths.png'); 
             background-size: contain; 
             background-repeat: no-repeat;
-            background-position: center;
+            z-index: 11;
+            transition: transform 0.1s ease-out;
+            transform: rotate(-15deg); 
         }
 
-        #controls-info {
-            position: fixed; /* Giữ cố định trên màn hình */
-            top: 10px;
-            left: 10px;
-            color: white;
-            padding: 5px 10px;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 5px;
-            font-size: 16px;
-            z-index: 100;
+        .fishing-line {
+            position: absolute; 
+            background: #ffffff; 
+            width: 1.5px; 
+            z-index: 9;
+            transform-origin: top center; 
+            box-shadow: 0 0 3px #fff;
         }
 
+        #controls-info { 
+            position: fixed; top: 10px; left: 10px; 
+            color: white; padding: 10px; 
+            background: rgba(0, 0, 0, 0.7); 
+            border-radius: 5px; z-index: 100; 
+        }
     </style>
 </head>
 <body>
-    
+    <div id="controls-info">WASD: Di chuyển | SPACE: Quăng cần (Dây đã dính liền đầu cần)</div>
     <div id="game-container">
-        <div id="player">
-            <div id="fishing-rod"></div> 
-        </div>
+        <div id="player"><div id="fishing-rod"></div></div>
     </div>
-    
-    <div id="controls-info">Sử dụng WASD để di chuyển</div>
 
     <script>
-    /* ================================================= */
-    /* PHẦN JAVASCRIPT (Logic Game)                       */
-    /* ================================================= */
-
     const gameContainer = document.getElementById('game-container');
     const player = document.getElementById('player');
     const rod = document.getElementById('fishing-rod');
 
-    let playerX = 0; 
-    let playerY = 0; 
-    const speed = 6; 
-    let velX = 0; 
-    let velY = 0; 
+    let playerX = 800, playerY = 550;
+    const speed = 6;
+    let isFacingRight = true, isFishing = false;
+    const keysPressed = {};
 
-    const keysPressed = {}; 
-    let playerWidth, playerHeight;
-    let isFacingRight = true; 
-    
-    // Biến để lưu kích thước màn hình
-    let viewWidth = window.innerWidth;
-    let viewHeight = window.innerHeight;
+    // --- TỌA ĐỘ DÂY CÂU CHUẨN BẠN ĐÃ CHỈNH ---
+    const LINE_PIVOT_X = 88;
+    const LINE_PIVOT_Y = -23;
 
-    // === BIẾN ZOOM MỚI ===
-    let currentZoom = 1.0; 
-    const ZOOM_INCREMENT = 0.05; // Mức tăng/giảm zoom mỗi lần nhấn
-    const MIN_ZOOM = 0.5; // Giới hạn thu nhỏ
-    const MAX_ZOOM = 2.0; // Giới hạn phóng to
+    // --- XỬ LÝ VA CHẠM ---
+    const colCanvas = document.createElement("canvas");
+    const colCtx = colCanvas.getContext("2d", {willReadFrequently: true});
+    const colImg = new Image();
+    colImg.src = "collision.png"; 
 
-    function applyRotation() {
-        if (isFacingRight) {
-            player.style.transform = 'scaleX(1)'; 
-            rod.style.transform = 'scaleX(1) rotate(20deg)'; 
-        } else {
-            player.style.transform = 'scaleX(-1)'; 
-            rod.style.transform = 'scaleX(1) rotate(20deg)'; 
-        }
+    colImg.onload = () => {
+        colCanvas.width = 1200; colCanvas.height = 846;
+        colCtx.drawImage(colImg, 0, 0, 1200, 846);
+    };
+
+    function canMove(x, y) {
+        if (x < 0 || y < 0 || x >= 1100 || y >= 680) return false;
+        const checkX = Math.floor(x + 50);
+        const checkY = Math.floor(y + 155);
+        try {
+            const data = colCtx.getImageData(checkX, checkY, 1, 1).data;
+            if (data[0] < 100) return false; 
+        } catch(e) { return true; }
+        return true;
     }
 
-    function updateCamera() {
-        // 1. Tính toán vị trí trung tâm màn hình (Camera Follow)
-        const centerX = viewWidth / 2;
-        const centerY = viewHeight / 2;
-        const camX = centerX - (playerX + playerWidth / 2);
-        const camY = centerY - (playerY + playerHeight / 2);
+    function tossLine() {
+        if (isFishing) return;
+        isFishing = true;
 
-        // 2. Áp dụng dịch chuyển VÀ PHÓNG TO (ZOOM)
-        // Kết hợp translate (theo dõi) và scale (phóng to)
-        gameContainer.style.transform = `translate(${camX}px, ${camY}px) scale(${1})`;
+        // Vụt cần câu
+        rod.style.transform = "rotate(40deg)";
+
+        // Tính toán điểm gốc dây dựa trên tọa độ X:88, Y:-23
+        const pX = playerX + (isFacingRight ? LINE_PIVOT_X : (100 - LINE_PIVOT_X));
+        const pY = playerY + LINE_PIVOT_Y;
+
+        // Tọa độ ngọn cần khi đã quăng
+        const angleRad = (isFacingRight ? 25 : 155) * Math.PI / 180;
+        const tipX = pX + Math.cos(angleRad) * 120;
+        const tipY = pY + Math.sin(angleRad) * 120;
+
+        const line = document.createElement("div");
+        line.className = "fishing-line";
+        line.style.left = tipX + "px";
+        line.style.top = tipY + "px";
+        gameContainer.appendChild(line);
+
+        let len = 0;
+        const anim = setInterval(() => {
+            len += 18;
+            line.style.height = len + "px";
+            line.style.transform = `rotate(${isFacingRight ? 1 : -1}deg)`;
+
+            if(len > 350) {
+                clearInterval(anim);
+                setTimeout(() => {
+                    line.remove();
+                    rod.style.transform = "rotate(-15deg)";
+                    isFishing = false;
+                }, 700);
+            }
+        }, 20);
     }
 
     function gameLoop() {
-        // --- LOGIC DI CHUYỂN NHÂN VẬT ---
-        velX = 0; velY = 0;
-        
-        if (keysPressed['w'] || keysPressed['W']) { velY = -speed; }
-        if (keysPressed['s'] || keysPressed['S']) { velY = speed; }
-        
-        if (keysPressed['a'] || keysPressed['A']) { 
-            velX = -speed;
-            isFacingRight = false; 
+        let velX = 0, velY = 0;
+        if (!isFishing) {
+            if (keysPressed['w']) velY = -speed;
+            if (keysPressed['s']) velY = speed;
+            if (keysPressed['a']) { velX = -speed; isFacingRight = false; }
+            if (keysPressed['d']) { velX = speed; isFacingRight = true; }
+            if (canMove(playerX + velX, playerY + velY)) {
+                playerX += velX; playerY += velY;
+            }
         }
-        if (keysPressed['d'] || keysPressed['D']) { 
-            velX = speed;
-            isFacingRight = true;  
-        }
-
-        // --- LOGIC ZOOM DÙNG Q VÀ E (Chỉ thực hiện 1 lần khi nhấn phím) ---
-        // Lưu ý: Logic này được xử lý tốt hơn trong keydown, nhưng giữ ở đây để dễ theo dõi
-        
-        if (keysPressed['q'] || keysPressed['Q']) {
-            // Phóng to (Zoom In)
-            currentZoom = Math.min(MAX_ZOOM, currentZoom + ZOOM_INCREMENT);
-        }
-        if (keysPressed['e'] || keysPressed['E']) {
-            // Thu nhỏ (Zoom Out)
-            currentZoom = Math.max(MIN_ZOOM, currentZoom - ZOOM_INCREMENT);
-        }
-
-        if (velX !== 0 && velY !== 0) { velX /= 1.414; velY /= 1.414; }
-
-        playerX += velX; 
-        playerY += velY;
-
-        player.style.left = playerX + 'px'; 
+        player.style.left = playerX + 'px';
         player.style.top = playerY + 'px';
+        player.style.transform = isFacingRight ? 'scaleX(1)' : 'scaleX(-1)';
 
-        applyRotation(); 
-        updateCamera();
-        
+        const camX = (window.innerWidth / 2) - (playerX + 50);
+        const camY = (window.innerHeight / 2) - (playerY + 80);
+        gameContainer.style.transform = `translate(${camX}px, ${camY}px)`;
         requestAnimationFrame(gameLoop);
     }
 
-    // ===================================
-    // XỬ LÝ SỰ KIỆN PHÍM (Giữ nguyên)
-    // ===================================
-    document.addEventListener('keydown', (event) => {
-        keysPressed[event.key] = true;
-        // Ngăn chặn hành vi mặc định của phím di chuyển và phím zoom
-        if (['w', 'a', 's', 'd', 'q', 'e'].includes(event.key.toLowerCase())) { 
-            event.preventDefault(); 
-        }
+    window.addEventListener('keydown', (e) => {
+        keysPressed[e.key.toLowerCase()] = true;
+        if (e.code === "Space") tossLine();
     });
-
-    document.addEventListener('keyup', (event) => {
-        keysPressed[event.key] = false;
-    });
-
-    // ===================================
-    // KHỞI TẠO VÀ CHỐNG ZOOM
-    // ===================================
-    function initializeGame() {
-        playerWidth = player.clientWidth; 
-        playerHeight = player.clientHeight;
-        viewWidth = window.innerWidth;
-        viewHeight = window.innerHeight;
-
-        playerX = (viewWidth - playerWidth) / 2;
-        playerY = (viewHeight - playerHeight) / 2;
-        
-        applyRotation(); 
-        updateCamera(); 
-        gameLoop();
-    }
+    window.addEventListener('keyup', (e) => keysPressed[e.key.toLowerCase()] = false);
     
-    window.addEventListener('resize', initializeGame);
-    window.onload = initializeGame;
-    
-    /* LOGIC NGĂN CHẶN ZOOM MẶC ĐỊNH TRÌNH DUYỆT (Giữ nguyên) */
-    document.addEventListener('keydown', function(event) {
-        if ((event.ctrlKey || event.metaKey) && 
-            (event.key === '=' || event.key === '-' || event.key === '0')) {
-            event.preventDefault();
-        }
-    });
-
-    document.addEventListener('wheel', function(event) {
-        if (event.ctrlKey || event.metaKey) {
-            event.preventDefault();
-        }
-    }, { passive: false }); 
-
-</script>
+    gameLoop();
+    </script>
 </body>
 </html>
