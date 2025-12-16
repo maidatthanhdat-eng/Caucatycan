@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Santa Fishing - Fixed Map</title>
+    <title>Santa Fishing - Final Version</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #1a1a1a; font-family: sans-serif; }
         
@@ -11,7 +11,6 @@
             position: absolute; 
             width: 1200px; 
             height: 846px; 
-            /* ĐÃ SỬA: Khớp với tên file background2.png trên GitHub */
             background-image: url('background2.png'); 
             background-size: contain; 
             background-repeat: no-repeat; 
@@ -23,8 +22,7 @@
             height: 160px; 
             position: absolute; 
             z-index: 10;
-            /* Khớp với file thkgay.png trên GitHub */
-            background-image: url('thkgay.png'); 
+            background-image: url('player.png'); 
             background-size: contain; 
             background-repeat: no-repeat; 
             background-position: center;
@@ -37,7 +35,6 @@
             top: -31px; 
             left: 77px; 
             transform-origin: 5% 95%;
-            /* Khớp với file RodOfTheDepths.jpg trên GitHub */
             background-image: url('RodOfTheDepths.jpg'); 
             background-size: contain; 
             background-repeat: no-repeat;
@@ -68,7 +65,7 @@
     </style>
 </head>
 <body>
-    <div id="controls-info">Di chuyển: WASD | Quăng cần: SPACE</div>
+    <div id="controls-info">Di chuyển: WASD | Quăng cần: SPACE (Dây đã dính đầu cần)</div>
     <div id="game-container">
         <div id="player"><div id="fishing-rod"></div></div>
     </div>
@@ -83,7 +80,7 @@
     let isFacingRight = true, isFishing = false;
     const keysPressed = {};
 
-    // Tọa độ dây câu chuẩn đã dính liền đầu cần
+    // Tọa độ dây câu chuẩn X: 88 | Y: -23
     const LINE_PIVOT_X = 88;
     const LINE_PIVOT_Y = -23;
 
