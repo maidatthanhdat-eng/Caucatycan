@@ -2,13 +2,12 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Câu Cá Tỷ Cân - Khôi Phục Animation & Cam</title>
+    <title>Câu Cá Tỷ Cân - Full Effects</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #4682B4; font-family: sans-serif; width: 100vw; height: 100vh; position: relative; }
         #game-container { 
-            position: absolute; width: 100%; height: 100%; 
+            position: absolute; width: 1200px; height: 846px; 
             background-image: url('background.png'); background-size: cover; 
-            background-repeat: no-repeat; background-position: center;
             transition: transform 0.22s ease-out; will-change: transform;
         }
 
@@ -25,8 +24,25 @@
             background-repeat: no-repeat; transform: rotate(45deg); z-index: 11;
         }
 
+        /* DÂY CÂU & MỒI */
         .fishing-line { position: absolute; background: #000; width: 1.5px; z-index: 9; transform-origin: top center; display: none; }
         .bobber { position: absolute; width: 10px; height: 10px; background: red; border-radius: 50%; border: 1px solid #fff; z-index: 12; display: none; }
+
+        /* BOSS CÁ */
+        #fish-boss { position: absolute; width: 300px; height: auto; z-index: 8; display: none; pointer-events: none; }
+
+        /* HIỆU ỨNG NƯỚC */
+        .splash {
+            position: absolute; border: 3px solid rgba(255,255,255,0.8); border-radius: 50%;
+            transform: translate(-50%, -50%); animation: splash-ani 0.6s ease-out forwards; z-index: 7;
+        }
+        @keyframes splash-ani { 0% { width: 0; height: 0; opacity: 1; } 100% { width: 80px; height: 40px; opacity: 0; } }
+
+        .bubble {
+            position: absolute; background: rgba(255,255,255,0.5); border-radius: 50%;
+            animation: bubble-up 1s ease-in forwards; z-index: 7;
+        }
+        @keyframes bubble-up { 0% { transform: translateY(0) scale(1); opacity: 0.6; } 100% { transform: translateY(-40px) scale(1.5); opacity: 0; } }
 
         #action-button {
             position: fixed; bottom: 20px; right: 20px; width: 120px; height: 40px;
@@ -38,6 +54,7 @@
 <body>
     <div id="game-container">
         <div id="player"><div id="fishing-rod"></div></div>
+        <img id="fish-boss" src="cavancan.png">
         <div id="active-line" class="fishing-line"></div>
         <div id="active-bobber" class="bobber"></div>
     </div>
@@ -46,36 +63,31 @@
     <script>
     const gameContainer = document.getElementById('game-container');
     const player = document.getElementById('player');
-    const rod = document.getElementById('fishing-rod');
+    const fishBoss = document.getElementById('fish-boss');
     const line = document.getElementById('active-line');
     const bobber = document.getElementById('active-bobber');
     const actionBtn = document.getElementById('action-button');
 
-    // Biến trạng thái
-    let playerX = 0, playerY = 0;
+    let playerX = 500, playerY = 400;
     let isFacingRight = true, gameState = 'idle', keys = {};
     const speed = 6;
-    let currentZoom = 1; // Khôi phục Zoom
+    let currentZoom = 1;
 
     // Animation biến
-    let animationFrame = 0;
-    let animationTimer = 0;
-    const framesPerStep = 7;
-    const totalWalkFrames = 2;
+    let animationFrame = 0, animationTimer = 0;
+    const framesPerStep = 7, totalWalkFrames = 2;
 
     // Thông số dây câu
-    const ROD_ATTACH_X = 40; 
-    const ROD_ATTACH_Y = 100;
-    const ROD_LENGTH = 190;
-    const CURRENT_ANGLE = 45;
+    const ROD_ATTACH_X = 40, ROD_ATTACH_Y = 100, ROD_LENGTH = 190, CURRENT_ANGLE = 45;
 
     function updatePhysics(tx, ty) {
         if (gameState === 'idle') {
             line.style.display = bobber.style.display = 'none';
+            fishBoss.style.display = 'none';
             return;
         }
         line.style.display = 'block';
-        bobber.style.display = 'block';
+        bobber.style.display = (gameState === 'waiting' || gameState === 'casting') ? 'block' : 'none';
 
         const baseLineX = playerX + (isFacingRight ? ROD_ATTACH_X : (120 - ROD_ATTACH_X));
         const baseLineY = playerY + ROD_ATTACH_Y;
@@ -83,41 +95,86 @@
         const tipX = baseLineX + Math.cos(angleRad) * ROD_LENGTH;
         const tipY = baseLineY + Math.sin(angleRad) * ROD_LENGTH;
 
-        const dx = tx - tipX;
-        const dy = ty - tipY;
+        const dx = tx - tipX, dy = ty - tipY;
         const dist = Math.sqrt(dx*dx + dy*dy);
         const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
         line.style.height = dist + "px";
-        line.style.left = tipX + "px";
-        line.style.top = tipY + "px";
+        line.style.left = tipX + "px"; line.style.top = tipY + "px";
         line.style.transform = `rotate(${angle - 90}deg)`;
-        bobber.style.left = (tx - 5) + "px";
-        bobber.style.top = (ty - 5) + "px";
+
+        if (bobber.style.display === 'block') {
+            bobber.style.left = (tx - 5) + "px"; bobber.style.top = (ty - 5) + "px";
+        }
+        if (fishBoss.style.display === 'block') {
+            fishBoss.style.left = (tx - 150) + "px"; fishBoss.style.top = (ty - 50) + "px";
+            fishBoss.style.transform = isFacingRight ? "scaleX(1)" : "scaleX(-1)";
+        }
+    }
+
+    function createSplash(x, y) {
+        const s = document.createElement("div"); s.className = "splash";
+        s.style.left = x + "px"; s.style.top = y + "px";
+        gameContainer.appendChild(s); setTimeout(() => s.remove(), 600);
+    }
+
+    function startCasting() {
+        if (gameState !== 'idle') return;
+        gameState = 'casting';
+        actionBtn.textContent = 'Đang quăng...';
+        player.style.backgroundImage = "url('truongtinh-cast.png')";
+
+        let curDist = 0;
+        const targetX = playerX + 60 + (isFacingRight ? 350 : -350);
+        const targetY = playerY + 250;
+
+        const castAnim = setInterval(() => {
+            curDist += 15;
+            const tx = playerX + 60 + (isFacingRight ? 1 : -1) * (curDist + 80);
+            const ty = playerY + 120 + (curDist * 0.45);
+            updatePhysics(tx, ty);
+
+            if (curDist >= 300) {
+                clearInterval(castAnim);
+                gameState = 'waiting';
+                createSplash(tx, ty);
+                startBubbling(tx, ty);
+            }
+        }, 30);
+    }
+
+    function startBubbling(tx, ty) {
+        let timePassed = 0;
+        actionBtn.textContent = 'Đang chờ cá...';
+        const bI = setInterval(() => {
+            if (gameState !== 'waiting') { clearInterval(bI); return; }
+            
+            const b = document.createElement("div"); b.className = "bubble";
+            b.style.width = b.style.height = (Math.random() * 10 + 5) + "px";
+            b.style.left = (tx + Math.random() * 20 - 10) + "px"; b.style.top = ty + "px";
+            gameContainer.appendChild(b); setTimeout(() => b.remove(), 1000);
+
+            timePassed += 200;
+            if (timePassed >= 5000) {
+                clearInterval(bI);
+                spawnFish(tx, ty);
+            }
+        }, 200);
+    }
+
+    function spawnFish(tx, ty) {
+        gameState = 'fishing';
+        actionBtn.textContent = 'CÁ CẮN! KÉO!';
+        fishBoss.style.display = 'block';
+        updatePhysics(tx, ty);
     }
 
     function handleAction() {
-        if (gameState === 'idle') {
-            gameState = 'casting';
-            actionBtn.textContent = 'Đang quăng...';
-            player.style.backgroundImage = "url('truongtinh-cast.png')"; // Ảnh quăng cần
-
-            let curDist = 0;
-            const castAnim = setInterval(() => {
-                curDist += 15;
-                const tx = playerX + 60 + (isFacingRight ? 1 : -1) * (curDist + 80);
-                const ty = playerY + 120 + (curDist * 0.4);
-                updatePhysics(tx, ty);
-                if (curDist >= 300) {
-                    clearInterval(castAnim);
-                    gameState = 'fishing';
-                    actionBtn.textContent = 'Kéo cần';
-                }
-            }, 30);
-        } else if (gameState === 'fishing') {
+        if (gameState === 'idle') startCasting();
+        else if (gameState === 'fishing' || gameState === 'waiting') {
             gameState = 'idle';
             actionBtn.textContent = 'Quăng cần';
-            player.style.backgroundImage = "url('truongtinh.png')";
+            updatePhysics(0, 0);
         }
     }
 
@@ -131,49 +188,25 @@
             }
         } else if (gameState === 'idle') {
             player.style.backgroundImage = "url('truongtinh.png')";
-            animationFrame = 0;
-            animationTimer = 0;
         }
     }
 
-    function updateCamera() {
-        const centerX = window.innerWidth / 2;
-        const centerY = window.innerHeight / 2;
-        const camX = centerX - (playerX + 60);
-        const camY = centerY - (playerY + 85);
-        gameContainer.style.transform = `translate(${camX}px, ${camY}px) scale(${currentZoom})`;
-    }
-
     function gameLoop() {
-        let vx = 0, vy = 0;
-        let isMoving = false;
-
+        let vx = 0, vy = 0, isMoving = false;
         if (gameState === 'idle') {
             if (keys['w']) { vy = -speed; isMoving = true; }
             if (keys['s']) { vy = speed; isMoving = true; }
             if (keys['a']) { vx = -speed; isFacingRight = false; isMoving = true; }
             if (keys['d']) { vx = speed; isFacingRight = true; isMoving = true; }
-
-            if (vx !== 0 && vy !== 0) { vx /= 1.414; vy /= 1.414; }
-            playerX += vx; 
-            playerY += vy;
+            playerX += vx; playerY += vy;
         }
-
-        player.style.left = playerX + 'px'; 
-        player.style.top = playerY + 'px';
+        player.style.left = playerX + 'px'; player.style.top = playerY + 'px';
         player.style.transform = isFacingRight ? 'scaleX(1)' : 'scaleX(-1)';
-
         updateAnimation(isMoving);
-        updateCamera();
-        
+        const camX = (window.innerWidth/2) - (playerX + 60), camY = (window.innerHeight/2) - (playerY + 85);
+        gameContainer.style.transform = `translate(${camX}px, ${camY}px) scale(${currentZoom})`;
+        if (gameState !== 'idle') updatePhysics(line.offsetLeft, line.offsetTop); // Cập nhật dây khi nhân vật di chuyển lúc câu
         requestAnimationFrame(gameLoop);
-    }
-
-    // Khởi tạo vị trí ban đầu
-    function init() {
-        playerX = (window.innerWidth - 120) / 2;
-        playerY = (window.innerHeight - 170) / 2;
-        gameLoop();
     }
 
     document.addEventListener('keydown', e => { 
@@ -182,9 +215,7 @@
     });
     document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
     actionBtn.onclick = handleAction;
-    
-    window.onload = init;
-    window.onresize = () => { updateCamera(); };
+    window.onload = () => { gameLoop(); };
     </script>
 </body>
 </html>
