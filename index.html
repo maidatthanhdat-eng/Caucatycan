@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Câu Cá Tỷ Cân</title>
+    <title>Câu Cá Tỷ Cân - Integrated Edition</title>
     
     <style>
-        /* ... CSS giữ nguyên ... */
         body {
             margin: 0;
             overflow: hidden; 
@@ -21,7 +20,7 @@
             position: absolute; 
             width: 100%;
             height: 100%;
-	    background-image: url('background.png');
+            background-image: url('background.png');
             background-size: cover; 
             background-repeat: no-repeat;
             background-position: center;
@@ -29,29 +28,25 @@
             will-change: transform;
         }
 
-        #fishing-line {
-            position: absolute;
-            width: 5px; 
-            height: 5px; 
-            border-radius: 50%;
-            background-color: black; 
-            opacity: 0; 
-            transition: transform 0.8s ease-out; 
-            z-index: 10;
-            left: 190px;
-            top: 100px;
-        }
-        
-        #fishing-wire {
-            position: absolute;
-            top: 0;
-            left: 0;
-            transform: translate(2px, 2px); 
-            width: 1px; 
-            background-color: black;
-            height: 0; 
-            transform-origin: top center; 
+        /* DÂY CÂU MỚI - MẢNH VÀ CHUẨN XÁC */
+        .fishing-line { 
+            position: absolute; 
+            background: #000; /* Dây màu đen cho rõ */
+            width: 1.5px; 
             z-index: 9; 
+            transform-origin: top center; 
+            display: none;
+        }
+
+        .bobber { 
+            position: absolute; 
+            width: 10px; 
+            height: 10px; 
+            background: red; 
+            border-radius: 50%; 
+            border: 1px solid #fff; 
+            z-index: 10; 
+            display: none;
         }
 
         #action-button {
@@ -69,26 +64,17 @@
             z-index: 200;
             text-align: center;
             line-height: 36px;
-            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
-        }
-
-        #action-button:active {
-            background-color: #ccc;
-            box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
         }
 
         #player {
             width: 120px;  
             height: 170px; 
             position: absolute; 
-            transition: transform 0.01s ease-out; 
-            will-change: transform;
             background-image: url('truongtinh.png'); 
             background-size: contain;   
             background-repeat: no-repeat;
             background-position: center;
-            background-color: transparent; 
-            border: none;
         }
 
         #fishing-rod {
@@ -98,23 +84,11 @@
             top: -20px;   
             left: -10px; 
             transform-origin: 30% 70%; 
-            will-change: transform;
             background-image: url('RodOfTheDepths.png'); 
-            background-size: contain; 
+            background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-        }
-
-        #controls-info {
-            position: fixed; 
-            top: 10px;
-            left: 10px;
-            color: white;
-            padding: 5px 10px;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 5px;
-            font-size: 16px;
-            z-index: 100;
+            transform: rotate(65deg); /* Góc quay cần mặc định */
         }
     </style>
 </head>
@@ -123,293 +97,160 @@
     <div id="game-container">
         <div id="player">
             <div id="fishing-rod"></div> 
-            <div id="fishing-line"> 
-                <div id="fishing-wire"></div> 
-            </div>
         </div>
+        <div id="active-line" class="fishing-line"></div>
+        <div id="active-bobber" class="bobber"></div>
     </div>
 
     <button id="action-button">Quăng cần</button>
 
     <script>
-    /* ================================================= */
-    /* PHẦN JAVASCRIPT (Logic Game)                       */
-    /* ================================================= */
-
     const gameContainer = document.getElementById('game-container');
     const player = document.getElementById('player');
     const rod = document.getElementById('fishing-rod');
-    const line = document.getElementById('fishing-line'); 
-    const wire = document.getElementById('fishing-wire');
     const actionButton = document.getElementById('action-button'); 
+    const line = document.getElementById('active-line');
+    const bobber = document.getElementById('active-bobber');
 
-    // === BIẾN TRẠNG THÁI GAME ===
+    // === BIẾN TRẠNG THÁI ===
     let gameState = 'idle'; 
-    let lineTargetX = 0; 
-    let lineTargetY = 0; 
-
-let animationFrame = 0; // Khung hình hiện tại
-let animationTimer = 0; // Bộ đếm thời gian
-const framesPerStep = 7; // Số lần lặp gameLoop trước khi chuyển frame (Tốc độ animation)
-const totalWalkFrames = 2;
-
-    let playerX = 0;  
-    let playerY = 0;  
+    let playerX = 0, playerY = 0;  
     const speed = 6;  
-    let velX = 0;  
-    let velY = 0;  
-
+    let velX = 0, velY = 0;  
+    let isFacingRight = true;
     const keysPressed = {}; 
-    let playerWidth, playerHeight;
-    let isFacingRight = true; 
-    
-    let viewWidth = window.innerWidth;
-    let viewHeight = window.innerHeight;
 
-    let currentZoom = 1; 
+    // Thông số cần câu (Cấu hình giống bản của bạn)
+    const ROD_CONF = {
+        offX: 25, offY: 105, // Điểm tựa cần trên người
+        length: 170,        // Độ dài cần
+        angle: 65           // Góc xoay
+    };
 
-    function applyRotation() {
-        if (isFacingRight) {
-            player.style.transform = 'scaleX(1)'; 
-            // Cần câu không bị lật
-            rod.style.transform = 'scaleX(1) rotate(65deg)'; 
-            line.style.left = '190px'; 
-            line.style.transformOrigin = '0% 0%'; 
-        } else {
-            player.style.transform = 'scaleX(-1)'; 
-            // Sửa lại TRANSFORM CẦN CÂU: Lật ngược (-1) để khử lật của cha, và quay 20 độ
-            rod.style.transform = 'scaleX(1) rotate(65deg)'; 
-            line.style.left = '-100px'; 
-            line.style.transformOrigin = '100% 0%';
+    let animationFrame = 0;
+    let animationTimer = 0;
+    const framesPerStep = 7;
+    const totalWalkFrames = 2;
+
+    function updateLine(tx, ty) {
+        if (gameState === 'idle') {
+            line.style.display = 'none';
+            bobber.style.display = 'none';
+            return;
         }
-        line.style.top = '100px';
-    }
+        line.style.display = 'block';
+        bobber.style.display = 'block';
 
-    function getPixelColor(x, y) {
-        if (y > viewHeight * (1 / currentZoom) / 3) {
-            return 'blue'; 
-        }
-        return 'other';
-    }
+        // 1. Tìm vị trí gốc cần câu dựa trên tư thế nhân vật
+        const baseLineX = playerX + (isFacingRight ? ROD_CONF.offX : (120 - ROD_CONF.offX));
+        const baseLineY = playerY + ROD_CONF.offY;
 
-    function updateCamera() {
-        const centerX = viewWidth / 2;
-        const centerY = viewHeight / 2;
-        
-        const camX = centerX - (playerX + playerWidth / 2);
-        const camY = centerY - (playerY + playerHeight / 2);
+        // 2. Tính tọa độ đầu cần (Rod Tip) bằng lượng giác
+        const angleRad = (isFacingRight ? -ROD_CONF.angle : -180 + ROD_CONF.angle) * Math.PI / 180;
+        const tipX = baseLineX + Math.cos(angleRad) * ROD_CONF.length;
+        const tipY = baseLineY + Math.sin(angleRad) * ROD_CONF.length;
 
-        gameContainer.style.transform = `translate(${camX}px, ${camY}px) scale(${currentZoom})`;
-    }
+        // 3. Nối dây từ Tip tới mục tiêu (tx, ty)
+        const dx = tx - tipX;
+        const dy = ty - tipY;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
-    function updateFishingWire() {
-        if (gameState !== 'idle') {
-            const style = window.getComputedStyle(line);
-            const matrix = new WebKitCSSMatrix(style.transform);
-            
-            const offsetX = matrix.m41; 
-            const offsetY = matrix.m42; 
-            
-            const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+        line.style.width = '1.5px';
+        line.style.height = dist + "px";
+        line.style.left = tipX + "px";
+        line.style.top = tipY + "px";
+        line.style.transform = `rotate(${angle - 90}deg)`;
 
-            const angleRad = Math.atan2(offsetY, offsetX);
-            const angleDeg = angleRad * (180 / Math.PI) + 90;
-
-            wire.style.height = distance + 'px';
-            wire.style.transform = `translate(2px, 2px) rotate(${angleDeg}deg)`; 
-            
-            wire.style.opacity = 1;
-        } else {
-            wire.style.height = '0px';
-            wire.style.opacity = 0;
-        }
-    }
-
-    function resetFishing() {
-        line.style.transition = 'transform 0.5s linear';
-        line.style.transform = `translate(0px, 0px)`; 
-        wire.style.height = '0px';
-        
-        setTimeout(() => {
-            gameState = 'idle';
-            actionButton.textContent = 'Quăng cần';
-            line.style.opacity = 0;
-            wire.style.opacity = 0;
-            line.style.transition = 'transform 0.8s ease-out';
-        }, 500); 
-    }
-
-    function checkLineLanding() {
-        if (gameState !== 'casting') return;
-        
-        const absoluteLineY = lineTargetY; 
-        
-        if (getPixelColor(lineTargetX, absoluteLineY) === 'blue') {
-            gameState = 'fishing';
-            actionButton.textContent = 'Kéo cần';
-            line.style.transition = 'none';
-        } else {
-            gameState = 'reeling';
-            actionButton.textContent = 'Thu thất bại!';
-            setTimeout(resetFishing, 1000); 
-        }
+        bobber.style.left = (tx - 5) + "px";
+        bobber.style.top = (ty - 5) + "px";
     }
 
     function startCasting() {
         if (gameState !== 'idle') return;
-        
         gameState = 'casting';
         actionButton.textContent = 'Đang quăng...';
-        line.style.opacity = 1;
-        
-        // VỊ TRÍ ĐẦU CẦN CÂU (TƯƠNG ĐỐI VỚI KHUNG NHÂN VẬT)
-        // Đây là điểm bắt đầu của dây câu
-        const rodTipX = playerX + (isFacingRight ? 190 : -100); 
-        const rodTipY = playerY + 100;
+        player.style.backgroundImage = `url('truongtinh-cast.png')`;
 
-        // VỊ TRÍ ĐÍCH CỦA MỒI CÂU
-        // Hướng quăng dây luôn theo hướng isFacingRight
-        lineTargetX = rodTipX + (isFacingRight ? 300 : -300); 
-        lineTargetY = rodTipY + 150; 
+        let curDist = 0;
+        const targetMax = 300;
+        const targetYOff = 150;
+        const castDir = isFacingRight ? 1 : -1;
 
-        // Áp dụng phép biến đổi dịch chuyển MỒI CÂU TỪ ĐIỂM BẮT ĐẦU
-        line.style.transform = `translate(${lineTargetX - rodTipX}px, ${lineTargetY - rodTipY}px)`;
-        
-        setTimeout(checkLineLanding, 500);
+        const anim = setInterval(() => {
+            curDist += 15;
+            const tx = playerX + (isFacingRight ? 60 : 60) + (castDir * curDist);
+            const ty = playerY + 100 + (curDist * 0.5);
+            
+            updateLine(tx, ty);
+
+            if (curDist >= targetMax) {
+                clearInterval(anim);
+                gameState = 'fishing';
+                actionButton.textContent = 'Kéo cần';
+            }
+        }, 30);
     }
 
     function handleAction() {
         if (gameState === 'idle') {
             startCasting();
         } else if (gameState === 'fishing') {
-            gameState = 'reeling';
-            actionButton.textContent = 'Đang kéo...';
-            resetFishing();
+            gameState = 'idle';
+            actionButton.textContent = 'Quăng cần';
+            updateLine(0, 0); // Hide line
         }
     }
-    
-    actionButton.addEventListener('click', handleAction);
-
-// Đặt hàm này gần gameLoop
-function updateAnimation() {
-    const isMoving = velX !== 0 || velY !== 0;
-
-    if (isMoving && gameState === 'idle') {
-        animationTimer++;
-        if (animationTimer >= framesPerStep) {
-            // Chuyển sang khung hình tiếp theo
-            animationFrame = (animationFrame % totalWalkFrames) + 1; // Kết quả là 1, 2, 1, 2...
-            
-            // Thay đổi hình nền nhân vật
-            // GIẢ ĐỊNH bạn có các file: 'player-walk-1.jpg', 'player-walk-2.jpg'
-            player.style.backgroundImage = `url('truongtinh-walk-${animationFrame}.png')`; 
-
-            animationTimer = 0;
-        }
-    } else {
-        // Nếu đứng yên
-        player.style.backgroundImage = `url('truongtinh.png')`; // Trở lại hình ảnh tĩnh ban đầu
-        animationFrame = 0;
-        animationTimer = 0;
-    }
-}
 
     function gameLoop() {
-        // --- LOGIC DI CHUYỂN NHÂN VẬT ---
         velX = 0; velY = 0;
         if (gameState === 'idle') {
-            const keyA = keysPressed['a'];
-            const keyD = keysPressed['d'];
-
-            if (keysPressed['w'] || keysPressed['W']) { velY = -speed; }
-            if (keysPressed['s'] || keysPressed['S']) { velY = speed; }
-            
-            if (keyA) { 
-                velX = -speed;
-                isFacingRight = false; 
-            }
-            if (keyD) { 
-                velX = speed;
-                isFacingRight = true;  
-            }
+            if (keysPressed['w']) velY = -speed;
+            if (keysPressed['s']) velY = speed;
+            if (keysPressed['a']) { velX = -speed; isFacingRight = false; }
+            if (keysPressed['d']) { velX = speed; isFacingRight = true; }
 
             if (velX !== 0 && velY !== 0) { velX /= 1.414; velY /= 1.414; }
-
-            playerX += velX; 
-            playerY += velY;
+            playerX += velX; playerY += velY;
         }
 
-        // --- CẬP NHẬT VIEW ---
         player.style.left = playerX + 'px'; 
         player.style.top = playerY + 'px';
+        player.style.transform = isFacingRight ? 'scaleX(1)' : 'scaleX(-1)';
 
-        applyRotation(); 
-        updateCamera();
-        updateFishingWire();
+        // Camera bám theo
+        const camX = (window.innerWidth / 2) - (playerX + 60);
+        const camY = (window.innerHeight / 2) - (playerY + 85);
+        gameContainer.style.transform = `translate(${camX}px, ${camY}px)`;
 
-	updateAnimation();
-        
+        // Update Animation đi bộ
+        if ((velX !== 0 || velY !== 0) && gameState === 'idle') {
+            animationTimer++;
+            if (animationTimer >= framesPerStep) {
+                animationFrame = (animationFrame % totalWalkFrames) + 1;
+                player.style.backgroundImage = `url('truongtinh-walk-${animationFrame}.png')`; 
+                animationTimer = 0;
+            }
+        } else if (gameState === 'idle') {
+            player.style.backgroundImage = `url('truongtinh.png')`;
+        }
+
         requestAnimationFrame(gameLoop);
     }
 
-    // ===================================
-    // XỬ LÝ SỰ KIỆN PHÍM (ĐÃ SỬA LỖI)
-    // ===================================
-    document.addEventListener('keydown', (event) => {
-        const key = event.key.toLowerCase();
-        
-        // Ghi nhận phím đã nhấn để xử lý di chuyển trong gameLoop
-        keysPressed[key] = true;
-
-        // QUĂNG/KÉO CẦN CHỈ BẰNG PHÍM SPACE
-        if (key === ' ' || key === 'spacebar') { 
-            event.preventDefault(); 
-            handleAction(); 
-        }
-
-        // Ngăn trình duyệt cuộn khi nhấn các phím di chuyển
-        if (['w', 'a', 's', 'd', 'q', 'e', ' '].includes(key)) { 
-            event.preventDefault(); 
-        }
+    // Sự kiện phím
+    document.addEventListener('keydown', (e) => {
+        keysPressed[e.key.toLowerCase()] = true;
+        if (e.code === 'Space') { e.preventDefault(); handleAction(); }
     });
+    document.addEventListener('keyup', (e) => keysPressed[e.key.toLowerCase()] = false);
+    actionButton.addEventListener('click', handleAction);
 
-    document.addEventListener('keyup', (event) => {
-        keysPressed[event.key.toLowerCase()] = false;
-    });
-
-    // ===================================
-    // KHỞI TẠO
-    // ===================================
-    function initializeGame() {
-        playerWidth = player.clientWidth; 
-        playerHeight = player.clientHeight;
-        viewWidth = window.innerWidth;
-        viewHeight = window.innerHeight;
-
-        playerX = (viewWidth - playerWidth) / 2;
-        playerY = (viewHeight - playerHeight) / 2;
-        
-        applyRotation(); 
-        updateCamera(); 
+    window.onload = () => {
+        playerX = (window.innerWidth - 120) / 2;
+        playerY = (window.innerHeight - 170) / 2;
         gameLoop();
-    }
-    
-    window.addEventListener('resize', initializeGame);
-    window.onload = initializeGame;
-    
-    document.addEventListener('keydown', function(event) {
-        if ((event.ctrlKey || event.metaKey) && 
-            (event.key === '=' || event.key === '-' || event.key === '0')) {
-            event.preventDefault();
-        }
-    });
-
-    document.addEventListener('wheel', function(event) {
-        if (event.ctrlKey || event.metaKey) {
-            event.preventDefault();
-        }
-    }, { passive: false }); 
-
-</script>
+    };
+    </script>
 </body>
 </html>
